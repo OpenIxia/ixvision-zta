@@ -1,0 +1,7 @@
+*_config.txt
+*.ata
+*.log
+VisionNPB/*
+bin/*
+lib/*
+include/*
