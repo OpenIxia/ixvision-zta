@@ -1,6 +1,7 @@
 *_config.txt
 *.ata
 *.log
+*.pyc
 VisionNPB/*
 bin/*
 lib/*
