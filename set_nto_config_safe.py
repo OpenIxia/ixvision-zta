@@ -57,6 +57,8 @@ ports_writable_properties = {
     "l2gre_strip_settings",
     "link_settings",
     "link_up_down_trap_enabled",
+    "lldp_receive_enabled",
+    "lldp_transmit_enabled",
     "media_type",
     #"mod_count",
     #"mode",

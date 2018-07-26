@@ -36,7 +36,7 @@ from ixia_nto import *
 # |_ZTPScope[PortList]
 # |_Keywords[Names,Types[NP|TP]]
 # |
-# |_DiscoveredPortList[PortNum,Enabled,Type,Speed,Status,Keywords,DiscoveryCycles]
+# |_DiscoveredPortList[PortNum,Enabled,Type,Speed,Status,Keywords,ZTPSucceeded]
 
 # Validate the NPB type againts a list of supported models [Exit if not supported]
 # Pull port capabilities list for the NPB type [Exit if not exists]
@@ -44,6 +44,7 @@ from ixia_nto import *
 # Overlay port capabilities with ZTP scope - initialize DiscoveredPortList with default values
 # All actions from here happen only within ZTP scope
 
+# TODO Disconnect all the filters from the ports in scope
 # Enable all disabled ports as 10G, NP - collect status
 # Reconfigure ports that are down as 1G - collect status
 # Disable all disconnected ports, set them as network, 10G
@@ -65,7 +66,7 @@ def portInventory(host_ip, port, username, password, keyword=''):
     for ntoPort in nto.searchPorts(searchTerms):
         ntoPortDetails = nto.getPort(str(ntoPort['id']))
         print("DEBUG: Collected port %s:%s configuration" % (host_ip, ntoPortDetails['default_name']))
-        discoveredPortList[ntoPort['id']] = {'name': ntoPortDetails['default_name'], 'type': 'port', 'details': ntoPortDetails}
+        discoveredPortList[ntoPort['id']] = {'name': ntoPortDetails['default_name'], 'type': 'port', 'ZTPSucceeded': False, 'details': ntoPortDetails}
         
     if len(discoveredPortList) == 0:
         return
@@ -73,6 +74,8 @@ def portInventory(host_ip, port, username, password, keyword=''):
     f = open(host_ip + '_pre_ztp_config.txt', 'w')
     f.write(json.dumps(discoveredPortList))
     f.close()
+
+    # TODO Disconnect all the filters from the ports in scope
 
     for port_id in discoveredPortList:
         port = discoveredPortList[port_id]
@@ -109,10 +112,12 @@ def portInventory(host_ip, port, username, password, keyword=''):
         print("DEBUG: Collected port %s:%s status:" % (host_ip, ntoPortDetails['default_name'])),
         if ntoPortDetails['link_status']['link_up']:
             print('UP')
+            discoveredPortList[port_id] = {'ZTPSucceeded': True}
         else:
             print('DOWN')
+            discoveredPortList[port_id] = {'ZTPSucceeded': False}
         # Update the list with the latest config and status
-        discoveredPortList[port_id] = {'name': ntoPortDetails['default_name'], 'type': 'port', 'details': ntoPortDetails}
+        discoveredPortList[port_id]['details'] = ntoPortDetails
 
     # Now go through the ports that are still down and change the media to 1G/AUTO
     for port_id in discoveredPortList:
@@ -134,33 +139,27 @@ def portInventory(host_ip, port, username, password, keyword=''):
         print("DEBUG: Collected port %s:%s status:" % (host_ip, ntoPortDetails['default_name'])),
         if ntoPortDetails['link_status']['link_up']:
             print('UP')
+            discoveredPortList[port_id] = {'ZTPSucceeded': True}
         else:
             print('DOWN')
+            discoveredPortList[port_id] = {'ZTPSucceeded': False}
         # Update the list with the latest config and status
-        discoveredPortList[port_id] = {'name': ntoPortDetails['default_name'], 'type': 'port', 'details': ntoPortDetails}
+        discoveredPortList[port_id]['details'] = ntoPortDetails
 
-    # Disable all disconnected ports, set them as network, 10G
+    # Enable LLDP TX on all enabled ports in scope
+    # For all ports where ZTP failed by this point, set them as network, 10G and disable
     for port_id in discoveredPortList:
         port = discoveredPortList[port_id]
         portDetails = port['details']
-        if not portDetails['link_status']['link_up'] and portDetails['enabled']:
+        if port['ZTPSucceeded']:
+            if 'lldp_receive_enabled' in portDetails: # check if this port has LLDP support before enabling it
+                nto.modifyPort(str(port_id), {'lldp_receive_enabled': True})
+                print("DEBUG: Enabled LLDP on port %s:%s" % (host_ip, port['details']['default_name']))
+            else:
+                print("DEBUG: Port %s:%s doesn't have LLDP RX capabilities" % (host_ip, port['details']['default_name']))
+        else:
             nto.modifyPort(str(port_id), {'enabled': False, 'media_type': 'SFP_PLUS_10G', 'link_settings': '10G_FULL', 'mode': 'NETWORK'})
             print("DEBUG: Converted port %s:%s to 10G, NETWORK and DISABLED" % (host_ip, port['details']['default_name']))
-            
-    
-    # NEXT STEP IS TO ENABLE LLDP TX and LEARN NEIGHBOURS
-
-# Look into port admin state (Enable|Disabled) - mark those that are enabled as such to exclude them from discovery
-# Compile a list of ports that have non-default settings and convert them to default: NP, 10G
-# Enable ports, validate and remember port status
-# Change speed to 1G for port that are down
-# Validate and remember port status for 1G ports
-# Disable all ports that are down, convert 1G ports to 10G
-
-# * Collect LLDP from connected ports, tag them ports based on LLDP information collected:
-#       = Network; TAP or SPAN
-#       = Tool; BRO or Moloch
-# * Reconfigure ports tagged "Tool" as tool ports
 
 
 # Main thread
