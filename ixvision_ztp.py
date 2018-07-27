@@ -153,7 +153,7 @@ def portInventory(host_ip, port, username, password, keyword=''):
         portDetails = port['details']
         if port['ZTPSucceeded']:
             if 'lldp_receive_enabled' in portDetails: # check if this port has LLDP support before enabling it
-                nto.modifyPort(str(port_id), {'lldp_receive_enabled': True})
+                nto.modifyPort(str(port_id), {'lldp_receive_enabled': True, 'keywords': ['_ZTP_LLDP']})
                 print("DEBUG: Enabled LLDP on port %s:%s" % (host_ip, port['details']['default_name']))
             else:
                 print("DEBUG: Port %s:%s doesn't have LLDP RX capabilities" % (host_ip, port['details']['default_name']))
