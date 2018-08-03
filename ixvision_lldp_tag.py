@@ -32,7 +32,7 @@ from ixia_nto import *
 # |_Keywords[Names]
 # |_NeighborList[PortNum,NeighborPortDescription]
 
-def tag_ports(host_ip, port, username, password, tag, keyword=''):
+def tag_ports(host_ip, port, username, password, tags):
 
     nto = NtoApiClient(host=host_ip, username=username, password=password, port=port, debug=True, logFile="ixvision_lldp_tag_debug.log")
 
@@ -49,7 +49,17 @@ def tag_ports(host_ip, port, username, password, tag, keyword=''):
         return
 
     for port_name in neighbor_list.keys():
-        print("Port %s neighbor %s:%s description %s" % (port_name, neighbor_list[port_name][0]['system_name'], neighbor_list[port_name][0]['port_id'], neighbor_list[port_name][0]['port_description']))
+        port = nto.getPort(port_name)
+        for neighbor in neighbor_list[port_name]:
+            for tag in tags:
+                if tag in neighbor['port_description']:
+                    print("Matched port %s with neighbor %s:%s description %s" % (port_name, neighbor['system_name'], neighbor['port_id'], neighbor['port_description']))
+                    port_keywords = port['keywords']
+                    if port_keywords is None:
+                        port_keywords = [tag]
+                    else:
+                        port_keywords = port_keywords + [tag]
+                    nto.modifyPort(str(port['id']), {'keywords': port_keywords})
         
 
 # Main thread
@@ -57,7 +67,6 @@ def tag_ports(host_ip, port, username, password, tag, keyword=''):
 argv = sys.argv[1:]
 username = ''
 password = ''
-keyword = ''    # USING KEYWORD ARG HERE TEMP TO DEFINE ZTP SCOPE
 tags = []       # A list of keywords to match LLDP info againts
 host = ''
 hosts_file = ''
@@ -65,19 +74,17 @@ config_file = ''
 port = 8000
 
 try:
-    opts, args = getopt.getopt(argv,"u:p:k:h:f:r:t:", ["username=", "password=", "keyword=", "host=", "hosts_file=", "port=", "tags="])
+    opts, args = getopt.getopt(argv,"u:p:h:f:r:t:", ["username=", "password=", "host=", "hosts_file=", "port=", "tags="])
 except getopt.GetoptError:
-    print 'ixvision_lldp_tag.py -u <username> -p <password> -t <tag1>,<tag2>,... [-h <hosts> | -f <host_file>] [-r port] [-k <keyword>]'
+    print 'ixvision_lldp_tag.py -u <username> -p <password> -t <tag1>,<tag2>,... [-h <hosts> | -f <host_file>] [-r port]'
     sys.exit(2)
 for opt, arg in opts:
     if opt in ("-u", "--username"):
         username = arg
     elif opt in ("-p", "--password"):
         password = arg
-    elif opt in ("-k", "--keyword"):
-        keyword = arg
     elif opt in ("-t", "--tags"):
-        tags = arg
+        tags = arg.split(",")
     elif opt in ("-h", "--host"):
         host = arg
     elif opt in ("-f", "--hosts_file"):
@@ -86,19 +93,19 @@ for opt, arg in opts:
         port = arg
 
 if username == '':
-    print 'ixvision_lldp_tag.py -u <username> -p <password> -t <tag1>,<tag2>,... [-h <hosts> | -f <host_file>] [-r port] [-k <keyword>]'
+    print 'ixvision_lldp_tag.py -u <username> -p <password> -t <tag1>,<tag2>,... [-h <hosts> | -f <host_file>] [-r port]'
     sys.exit(2)
 
 if password == '':
-    print 'ixvision_lldp_tag.py -u <username> -p <password> -t <tag1>,<tag2>,... [-h <hosts> | -f <host_file>] [-r port] [-k <keyword>]'
+    print 'ixvision_lldp_tag.py -u <username> -p <password> -t <tag1>,<tag2>,... [-h <hosts> | -f <host_file>] [-r port]'
     sys.exit(2)
 
 if (host == '') and (hosts_file == ''):
-    print 'ixvision_lldp_tag.py -u <username> -p <password> -t <tag1>,<tag2>,... [-h <hosts> | -f <host_file>] [-r port] [-k <keyword>]'
+    print 'ixvision_lldp_tag.py -u <username> -p <password> -t <tag1>,<tag2>,... [-h <hosts> | -f <host_file>] [-r port]'
     sys.exit(2)
 
 if len(tags) == 0:
-    print 'ixvision_lldp_tag.py -u <username> -p <password> -t <tag1>,<tag2>,... [-h <hosts> | -f <host_file>] [-r port] [-k <keyword>]'
+    print 'ixvision_lldp_tag.py -u <username> -p <password> -t <tag1>,<tag2>,... [-h <hosts> | -f <host_file>] [-r port]'
     sys.exit(2)
 
 
@@ -119,7 +126,7 @@ for host in hosts_list:
     host_ip = host[0]
     
     print("DEBUG: Starting thread for %s" % (host_ip))
-    thread = threading.Thread(name=host, target=tag_ports, args=(host_ip, port, username, password, keyword, tags))
+    thread = threading.Thread(name=host, target=tag_ports, args=(host_ip, port, username, password, tags))
     threads_list.append(thread)
 
 for thread in threads_list:
