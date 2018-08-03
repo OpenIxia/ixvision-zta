@@ -38,12 +38,6 @@ def tag_ports(host_ip, port, username, password, tags):
 
     neighbor_list = {}
 
-    # Enumerate disabled ports - we are not touching anything that can already carry traffic
-    #searchTerms = {'enabled':False}
-    #if keyword != '':
-    #    # Limit ZTP scope by a keyword if provided
-    #    searchTerms = {"keywords":[keyword],'enabled':False}
-        
     neighbor_list = nto.getAllNeighbors()
     if len(neighbor_list) == 0:
         return
