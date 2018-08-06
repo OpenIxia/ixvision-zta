@@ -7,3 +7,4 @@ bin/*
 lib/*
 include/*
 VisionNPB
+*.pyc

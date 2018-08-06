@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 #
-# Zeto-Touch Provisioning script (playbook) for a Ixia Vision NPB
-#
+# Zero-Touch Provisioning script (playbook) for a Ixia Vision NPB
+# Perform initial NPB configuration, run through port discovery.
+# End goal is to have a managable system with LLDP neighbours being observed for further ZTP configuration steps
 
 # 1. Check and upgrade s/w version [SKIP]
 # 2. Configure basic system parameters (login banner for example) [maybe as a test]
 # 3. Install a license [SKIP]
-# 4. Perform port inventory based on LLDP info, tag the ports discovered [FOCUS]
-# 5. Configure LBGs for Tools: BRO, Moloch [after #4]
-# 6. Created filters for BRO and Moloch, connect them to TAP and SPAN ports [after #4]
+# 4. Perform port discovery - cycle through all supported port speeds to brning all possible links up [FOCUS]
+# 5. Disable all the ports that stayed down, tag the ports that came up as configured by ZTP
 
 import sys
 import getopt
@@ -18,15 +18,11 @@ from ixia_nto import *
 
 # DEFINE FUNCTIONS HERE
 
-# Port inventory using LLDP info
-
 # Input 
 # - Connection to an NPB
 # - NPB type (can be determined)
 # - Supported port speeds per model (for now, we can assume 1 and 10G only)
 # - ZTP scope (how many ports, for example) - we need this for granular control, instead of going through all available ports
-# - Keywords to look for on network side
-# - Keywords to look for on tool side
 
 # Model to operate
 # NPB
@@ -34,8 +30,6 @@ from ixia_nto import *
 # |_Type
 # |_PortCapabilities[PortList[PortNum,SpeedList]]
 # |_ZTPScope[PortList]
-# |_Keywords[Names,Types[NP|TP]]
-# |
 # |_DiscoveredPortList[PortNum,Enabled,Type,Speed,Status,Keywords,ZTPSucceeded]
 
 # Validate the NPB type againts a list of supported models [Exit if not supported]
@@ -176,7 +170,7 @@ port = 8000
 try:
     opts, args = getopt.getopt(argv,"u:p:k:h:f:r:", ["username=", "password=", "keyword=", "host=", "hosts_file=", "port="])
 except getopt.GetoptError:
-    print 'ixvision_ztp.py -u <username> -p <password> -k <keyword> [-h <hosts> | -f <host_file>] [-r port]'
+    print 'ixvision_ztp.py -u <username> -p <password> [-h <hosts> | -f <host_file>] [-r port] [-k <keyword>]'
     sys.exit(2)
 for opt, arg in opts:
     if opt in ("-u", "--username"):
