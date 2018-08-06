@@ -32,6 +32,8 @@ from ixia_nto import *
 # |_Keywords[Names]
 # |_NeighborList[PortNum,NeighborPortDescription]
 
+# TODO remove keywords from ports that no longer have matching LLDP neighbors
+
 def tag_ports(host_ip, port, username, password, tags):
 
     nto = NtoApiClient(host=host_ip, username=username, password=password, port=port, debug=True, logFile="ixvision_lldp_tag_debug.log")
