@@ -43,7 +43,7 @@ def tag_ports(host_ip, port, username, password, tags):
         return
 
     for port_name in neighbor_list.keys():
-        port = nto.getPort(port_name)
+        port = nto.getPortProperties(port_name,'id,keywords')
         for neighbor in neighbor_list[port_name]:
             for tag in tags:
                 if tag in neighbor['port_description']:
