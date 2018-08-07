@@ -41,20 +41,38 @@ def form_port_groups(host_ip, port, username, password, tags, pg_name, pg_mode_k
 
     port_group_list = nto.searchPortGroups({'name': pg_name})
     if len(port_group_list) == 0:
+        # No existing group with such name, create new one
         pg_params.update({'name': pg_name, 'keywords': ['_ZTP_LLDP'] + tags})
         new_port_group = nto.createPortGroup(pg_params)
         if new_port_group is not None and len(new_port_group) > 0:
-            print("No group found, created a new one with id %d" % (new_port_group['id']))
+            print("No group found, created a new one with id %s" % (str(new_port_group['id'])))
         else:
             print("No group found, failed to created a new one!")
             return
+    elif len(port_group_list) == 1:
+        # An existing port group found
+        port_group = port_group_list[0]
+        port_group_details = nto.getPortGroup(str(port_group['id']))
+        if port_group_details is not None:
+            # WARNING! NTO API returns 'type' attribute instead of 'port_group_type'
+            print("Found existing port group %s of %s type and %s mode" % (port_group_details['default_name'], port_group_details['type'], port_group_details['mode'])),
+            if port_group_details['type'] == pg_params['port_group_type'] and port_group_details['mode'] == pg_params['mode']:
+                # PG types match, will update the existing group
+                print("-- type and mode match, will update")
+            else:
+                # Mismatch, return
+                print("-- type or mode mismatch with requested %s, %s, skipping..." % (pg_params['port_group_type'], pg_params['mode']))
+        else:
+            print("Failed to retrieve details for port %s, skipping..." % (port_group['name']))
     else:
+        # This should never happen, but just in case, provide details to look into
+        print("Found more than one port group named %s, can't continue:" % (port_group['name'])),
         for port_group in port_group_list:
             port_group_details = nto.getPortGroup(str(port_group['id']))
             if port_group_details is not None:
-                print("Found existing port group %s in %s mode" % (port_group_details['default_name'], port_group_details['mode']))
-            else:
-                print("Failed to retrieve details for port %s, skipping..." % (port_group['name']))
+                print (" %s," % (port_group_details['default_name'])),
+        print("")
+        return
 
 
 # Main thread
