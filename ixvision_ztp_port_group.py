@@ -7,7 +7,7 @@
 # 2. Each run of this script would configure a single port group using the supplied name and group type:
 #  - Search for an existing port group with the same name. If found with the matching type, continue by referencing that group. If the type doesn't match, stop. 
 #  - If not found, create a new group
-# 4. Search for ports with matching keywords that are not yet members of any group. Add all such ports to the group, change port mode if nessesary
+# 4. Search for enabled ports with matching keywords that are not yet members of any group and don't have any connections to/from them. Add all such ports to the group, change port mode if nessesary
 # 5. For all exising port group members, check keywords and if any have no match, remove them from the port group and set to a default configuration (Network Port, no connections)
 
 
@@ -63,7 +63,7 @@ def form_port_groups(host_ip, port, username, password, tags, pg_name, pg_mode_k
                 updated_keywords = []
                 updated_keywords.extend(port_group_details['keywords'])
                 for keyword in tags:
-                    if keyword.upper() not in updated_keywords: # NTO keywords are always in upper case
+                    if keyword not in updated_keywords:
                         updated_keywords.append(keyword)
                 if len(updated_keywords) > len(port_group_details['keywords']):
                     nto.modifyPortGroup(str(port_group['id']),{'keywords': updated_keywords})
@@ -81,6 +81,28 @@ def form_port_groups(host_ip, port, username, password, tags, pg_name, pg_mode_k
                 print (" %s," % (port_group_details['default_name'])),
         print("")
         return
+
+    # Now search for ports to be added to the port group
+    port_list = nto.searchPorts({'enabled': True, 'port_group_id': None, 'dest_filter_list': [], 'source_filter_list': []})
+    matching_port_list = []
+    for port in port_list:
+        port_details = nto.getPortProperties(str(port['id']), 'id,keywords')
+        if port_details is not None:
+            for keyword in tags:
+                if keyword in port_details['keywords']:
+                    already_matched = False  # Will check if we already matched this port via a different tag
+                    for matched_port in matching_port_list:
+                        if port['id'] == matched_port['id']:
+                            already_matched = True
+                    if not already_matched:
+                        print("Found port %s with matching keyword %s" % (port['name'], keyword))
+                        matching_port_list.append(port)
+                
+    if len(matching_port_list) == 0:
+        print("No matching ports found")
+        return
+    else:
+        print("Found %d matching ports" % (len(matching_port_list)))
 
 
 # Main thread
@@ -109,7 +131,7 @@ for opt, arg in opts:
     elif opt in ("-p", "--password"):
         password = arg
     elif opt in ("-t", "--tags"):
-        tags = arg.split(",")
+        tags = arg.upper().split(",")  # NTO keywords are always in upper case
     elif opt in ("-n", "--name"):
         port_group_name = arg
     elif opt in ("-m", "--mode"):
