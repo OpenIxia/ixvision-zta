@@ -59,6 +59,14 @@ def form_port_groups(host_ip, port, username, password, tags, pg_name, pg_mode_k
             if port_group_details['type'] == pg_params['port_group_type'] and port_group_details['mode'] == pg_params['mode']:
                 # PG types match, will update the existing group
                 print("-- type and mode match, will update")
+                # Update keywords
+                updated_keywords = []
+                updated_keywords.extend(port_group_details['keywords'])
+                for keyword in tags:
+                    if keyword.upper() not in updated_keywords: # NTO keywords are always in upper case
+                        updated_keywords.append(keyword)
+                if len(updated_keywords) > len(port_group_details['keywords']):
+                    nto.modifyPortGroup(str(port_group['id']),{'keywords': updated_keywords})
             else:
                 # Mismatch, return
                 print("-- type or mode mismatch with requested %s, %s, skipping..." % (pg_params['port_group_type'], pg_params['mode']))
