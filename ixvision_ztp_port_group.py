@@ -96,12 +96,19 @@ def form_port_groups(host_ip, port, username, password, tags, pg_name, pg_mode_k
             for keyword in tags:
                 if keyword in port_details['keywords'] and port['id'] not in matching_port_id_list:
                         print("Found port %s with matching keyword %s" % (port['name'], keyword))
-                        matching_port_id_list.append(port['id'])
                         # Check and update port mode, if needed
-                        if port_details['mode'] != pg_params['mode']:
+                        if port_details['mode'] == pg_params['mode']:
+                                matching_port_id_list.append(port['id'])
+                        else:
                             print("Convering port %s into %s mode" % (port['name'], pg_params['mode']))
                             nto.modifyPort(str(port['id']), {'mode': pg_params['mode']})
-                            # TODO check if the modification was successful
+                            # Check if the modification was successful and only add the port to the list of matching ports if yes
+                            port_details = nto.getPortProperties(str(port['id']), 'id,keywords,mode')
+                            if port_details is not None and port_details['mode'] == pg_params['mode']:
+                                matching_port_id_list.append(port['id'])
+                            else:
+                                # Note, if the same port has several keywords that match, there will be several attempts to change the mode
+                                print("Changing port mode failed, skipping...")
                 
     if len(matching_port_id_list) == 0:
         print("No matching ports found")
