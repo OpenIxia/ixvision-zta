@@ -40,12 +40,15 @@ def form_port_groups(host_ip, port, username, password, tags, pg_name, pg_mode_k
     nto = NtoApiClient(host=host_ip, username=username, password=password, port=port, debug=True, logFile="ixvision_ztp_port_group_debug.log")
 
     port_group_list = nto.searchPortGroups({'name': pg_name})
+    ztp_port_group = None
+    ztp_port_group_port_list = []
     if len(port_group_list) == 0:
         # No existing group with such name, create new one
         pg_params.update({'name': pg_name, 'keywords': ['_ZTP_LLDP'] + tags})
         new_port_group = nto.createPortGroup(pg_params)
         if new_port_group is not None and len(new_port_group) > 0:
             print("No group found, created a new one with id %s" % (str(new_port_group['id'])))
+            ztp_port_group = new_port_group
         else:
             print("No group found, failed to created a new one!")
             return
@@ -59,6 +62,8 @@ def form_port_groups(host_ip, port, username, password, tags, pg_name, pg_mode_k
             if port_group_details['type'] == pg_params['port_group_type'] and port_group_details['mode'] == pg_params['mode']:
                 # PG types match, will update the existing group
                 print("-- type and mode match, will update")
+                ztp_port_group = port_group
+                ztp_port_group_port_list = port_group_details['port_list']
                 # Update keywords
                 updated_keywords = []
                 updated_keywords.extend(port_group_details['keywords'])
@@ -84,25 +89,37 @@ def form_port_groups(host_ip, port, username, password, tags, pg_name, pg_mode_k
 
     # Now search for ports to be added to the port group
     port_list = nto.searchPorts({'enabled': True, 'port_group_id': None, 'dest_filter_list': [], 'source_filter_list': []})
-    matching_port_list = []
+    matching_port_id_list = []
     for port in port_list:
-        port_details = nto.getPortProperties(str(port['id']), 'id,keywords')
+        port_details = nto.getPortProperties(str(port['id']), 'id,keywords,mode')
         if port_details is not None:
             for keyword in tags:
                 if keyword in port_details['keywords']:
+                    # TODO rework this to simplify since now matching_port_id_list is a simple array
                     already_matched = False  # Will check if we already matched this port via a different tag
-                    for matched_port in matching_port_list:
-                        if port['id'] == matched_port['id']:
+                    for matched_port_id in matching_port_id_list:
+                        if port['id'] == matched_port_id:
                             already_matched = True
                     if not already_matched:
                         print("Found port %s with matching keyword %s" % (port['name'], keyword))
-                        matching_port_list.append(port)
+                        matching_port_id_list.append(port['id'])
+                        # Check and update port mode, if needed
+                        if port_details['mode'] != pg_params['mode']:
+                            print("Convering port %s into %s mode" % (port['name'], pg_params['mode']))
+                            nto.modifyPort(str(port['id']), {'mode': pg_params['mode']})
+                            # TODO check if the modification was successful
                 
-    if len(matching_port_list) == 0:
+    if len(matching_port_id_list) == 0:
         print("No matching ports found")
         return
     else:
-        print("Found %d matching ports" % (len(matching_port_list)))
+        print("Found %d matching ports" % (len(matching_port_id_list)))
+        
+        
+    nto.modifyPortGroup(str(ztp_port_group['id']), {'port_list': matching_port_id_list + ztp_port_group_port_list})
+    print("Added %d ports to port group %s" % (len(matching_port_id_list), pg_name))
+
+
 
 
 # Main thread
