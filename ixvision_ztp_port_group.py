@@ -94,13 +94,7 @@ def form_port_groups(host_ip, port, username, password, tags, pg_name, pg_mode_k
         port_details = nto.getPortProperties(str(port['id']), 'id,keywords,mode')
         if port_details is not None:
             for keyword in tags:
-                if keyword in port_details['keywords']:
-                    # TODO rework this to simplify since now matching_port_id_list is a simple array
-                    already_matched = False  # Will check if we already matched this port via a different tag
-                    for matched_port_id in matching_port_id_list:
-                        if port['id'] == matched_port_id:
-                            already_matched = True
-                    if not already_matched:
+                if keyword in port_details['keywords'] and port['id'] not in matching_port_id_list:
                         print("Found port %s with matching keyword %s" % (port['name'], keyword))
                         matching_port_id_list.append(port['id'])
                         # Check and update port mode, if needed
