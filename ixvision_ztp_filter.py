@@ -20,6 +20,17 @@ from ixia_nto import *
 
 # DEFINE FUNCTIONS HERE
 
+## Search for port groups and return a list if IDs
+def search_port_group_id_list(nto, params):
+    pg_id_list = []
+    pg_list = nto.searchPortGroups(params)
+    for pg in pg_list:
+        pg_id_list.append(pg['id'])
+    return pg_id_list
+    
+
+## Filter create/update
+
 # Input 
 # - Connection to an NPB
 # - Dynamic filter name
@@ -32,10 +43,11 @@ def form_dynamic_filter(host_ip, port, username, password, df_name, input_pg_nam
         
     nto = NtoApiClient(host=host_ip, username=username, password=password, port=port, debug=True, logFile="ixvision_ztp_filter_debug.log")
 
+    # Search for existing DF, create a new one if not found
     df_list = nto.searchFilters({'name': df_name})
     ztp_df = None
-    ztp_df_source_port_group_list = []
-    ztp_df_dest_port_group_list = []
+    ztp_df_source_port_group_id_list = []
+    ztp_df_dest_port_group_id_list = []
     if len(df_list) == 0:
         # No existing filter with such name, will create a new one
         df_params.update({'name': df_name, 'keywords': ['_ZTP_LLDP']})
@@ -51,9 +63,9 @@ def form_dynamic_filter(host_ip, port, username, password, df_name, input_pg_nam
         df = df_list[0]
         df_details = nto.getFilter(str(df['id'])) # TODO handle 404 not found situation
         ztp_df = df
-        ztp_df_source_port_group_list = df_details['source_port_group_list']
-        ztp_df_dest_port_group_list = df_details['dest_port_group_list']
-        print("Found existing DF %s connecting network %s and tool %s port groups" % (df_details['default_name'], ztp_df_source_port_group_list, ztp_df_dest_port_group_list))
+        ztp_df_source_port_group_id_list = df_details['source_port_group_list']
+        ztp_df_dest_port_group_id_list = df_details['dest_port_group_list']
+        print("Found existing DF %s connecting network %s and tool %s port groups" % (df_details['default_name'], ztp_df_source_port_group_id_list, ztp_df_dest_port_group_id_list))
     else:
         # This should never happen, but just in case, provide details to look into
         print("Found more than one DF named %s, can't continue:" % (df_name)),
@@ -64,7 +76,16 @@ def form_dynamic_filter(host_ip, port, username, password, df_name, input_pg_nam
         print("")
         return
         
-
+    # TODO update DF criteria
+    
+    # Search for network and tool port groups
+    ztp_df_source_port_group_id_list.extend(search_port_group_id_list(nto, {'name': input_pg_name}))
+    ztp_df_dest_port_group_id_list.extend  (search_port_group_id_list(nto, {'name': output_pg_name}))
+    
+    # TODO update DF connections only if there is an actual change in list of PGs connected to it
+    # TODO update keywords with _ZTP_LLDP
+    df_params.update({'source_port_group_list': ztp_df_source_port_group_id_list, 'dest_port_group_list': ztp_df_dest_port_group_id_list})
+    nto.modifyFilter(str(ztp_df['id']), df_params)
 
 # Main thread
 
