@@ -136,7 +136,7 @@ hosts_file = ''
 config_file = ''
 port = 8000
 
-usage = 'ixvision_lldp_tag.py -u <username> -p <password> -t <tag1>,<tag2>,... -n <port_group_name> -m net|lb [-h <hosts> | -f <host_file>] [-r port]'
+usage = 'ixvision_ztp_port_group.py -u <username> -p <password> -t <tag1>,<tag2>,... -n <port_group_name> -m net|lb [-h <hosts> | -f <host_file>] [-r port]'
 
 try:
     opts, args = getopt.getopt(argv,"u:p:h:f:r:t:n:m:", ["username=", "password=", "host=", "hosts_file=", "port=", "tags=", "name=", "mode="])
