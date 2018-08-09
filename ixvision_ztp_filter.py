@@ -27,10 +27,43 @@ from ixia_nto import *
 # - Tool port group name
 
 def form_dynamic_filter(host_ip, port, username, password, df_name, input_pg_name, output_pg_name):
+    
+    df_params = {}
         
     nto = NtoApiClient(host=host_ip, username=username, password=password, port=port, debug=True, logFile="ixvision_ztp_filter_debug.log")
 
-
+    df_list = nto.searchFilters({'name': df_name})
+    ztp_df = None
+    ztp_df_source_port_group_list = []
+    ztp_df_dest_port_group_list = []
+    if len(df_list) == 0:
+        # No existing filter with such name, will create a new one
+        df_params.update({'name': df_name, 'keywords': ['_ZTP_LLDP']})
+        new_df = nto.createFilter(df_params, True) # the last parameter is for allowTemporayDataLoss
+        if new_df is not None and len(new_df) > 0:
+            print("No existing DF found, created a new one with id %s" % (str(new_df['id'])))
+            ztp_df = new_df
+        else:
+            print("No existing DF found, failed to created a new one!")
+            return
+    elif len(df_list) == 1:
+        # An existing DF found
+        df = df_list[0]
+        df_details = nto.getFilter(str(df['id'])) # TODO handle 404 not found situation
+        ztp_df = df
+        ztp_df_source_port_group_list = df_details['source_port_group_list']
+        ztp_df_dest_port_group_list = df_details['dest_port_group_list']
+        print("Found existing DF %s connecting network %s and tool %s port groups" % (df_details['default_name'], ztp_df_source_port_group_list, ztp_df_dest_port_group_list))
+    else:
+        # This should never happen, but just in case, provide details to look into
+        print("Found more than one DF named %s, can't continue:" % (df_name)),
+        for df in df_list:
+            df_details = nto.getFilter(str(df['id']))
+            if df_details is not None:
+                print (" %s," % (df_details['default_name'])),
+        print("")
+        return
+        
 
 
 # Main thread

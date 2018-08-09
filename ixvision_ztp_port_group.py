@@ -79,7 +79,7 @@ def form_port_groups(host_ip, port, username, password, tags, pg_name, pg_mode_k
             print("Failed to retrieve details for port %s, skipping..." % (port_group['name']))
     else:
         # This should never happen, but just in case, provide details to look into
-        print("Found more than one port group named %s, can't continue:" % (port_group['name'])),
+        print("Found more than one port group named %s, can't continue:" % (pg_name)),
         for port_group in port_group_list:
             port_group_details = nto.getPortGroup(str(port_group['id']))
             if port_group_details is not None:
