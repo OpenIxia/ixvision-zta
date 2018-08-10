@@ -45,7 +45,14 @@ def search_port_group_id_list(nto, params):
 def form_dynamic_filter(host_ip, port, username, password, df_name, input_pg_name, output_pg_name, df_mode):
     
     df_params = {}
-        
+    df_mode_value = 'DISABLE'                           # Default DF mode value for a new filter to use, if not overridden
+    df_criteria_value = {                               # TODO TEMPORARY - Replace with REQUIRED CRITERIA Default DF criteria for PBC, DBC modes for a new filter to use, if not overridden
+        "ethertype": {"value": "800"},
+        "logical_operation": "AND"
+    }
+    if isinstance(df_modes_supported, dict) and df_mode in df_modes_supported.keys():
+        df_mode_value = df_modes_supported[df_mode]
+                
     nto = NtoApiClient(host=host_ip, username=username, password=password, port=port, debug=True, logFile="ixvision_ztp_filter_debug.log")
 
     # Search for existing DF, create a new one if not found
