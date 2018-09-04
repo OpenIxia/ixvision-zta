@@ -7,6 +7,7 @@ import argparse
 import threading
 import json
 
+from ixvision_ztp_port_group import *
 from ixvision_ztp_filter import *
 
 # DEFINE GLOBAL VARs HERE
@@ -47,7 +48,7 @@ lldptag_parser.add_argument('-t', '--tag', required=True)
 pgform_parser = subparsers.add_parser('pgform', description=ztp_actions_choices['pgform'])
 pgform_parser.add_argument('-t', '--tag', required=True)
 pgform_parser.add_argument('-n', '--name', required=True)
-pgform_parser.add_argument('-m', '--mode', required=True)
+pgform_parser.add_argument('-m', '--mode', required=True, choices=pg_modes_supported.keys())
 
 dfform_parser = subparsers.add_parser('dfform', description=ztp_actions_choices['dfform'])
 dfform_parser.add_argument('-n', '--name', required=True)
@@ -68,20 +69,26 @@ password = args.password
 host = args.hostname
 port = args.port
 
-# Task-specific parameters
-# dfform
-df_name = args.name             # Name for Dynamic Filter to work with
-network_pg_name = args.input    # Name for the network port group to connect to the DF
-tool_pg_name = args.output      # Name for the tool port group to connect to the DF
-df_mode = args.mode             # Mode for Dynamic Filter
-criteria_file = args.criteria   # File with dynamic filter criteria in JSON format
-df_criteria = None              # Criteria for Dynamic Filter after pasing criteria_file
-
-action_args = []
 
 if args.subparser_name in ztp_actions_choices:
     print ('Starting %s for %s' % (ztp_actions_choices[args.subparser_name], host))
-    if args.subparser_name == 'dfform':
+    if args.subparser_name == 'pgform':
+        # Task-specific parameters
+        tags = args.tag.upper().split(",")  # A list of keywords to match port keywords info againts. NTO keywords are always in upper case
+        port_group_name = args.name         # Name for the group to use (in order to avoid referencing automatically generated group number)
+        port_group_mode = args.mode         # (net) for NETWORK, (lb) for LOAD_BALANCE - no other modes are supported yet
+        
+        form_port_groups(host, port, username, password, tags, port_group_name, port_group_mode)
+        
+    elif args.subparser_name == 'dfform':
+        # Task-specific parameters
+        df_name = args.name             # Name for Dynamic Filter to work with
+        network_pg_name = args.input    # Name for the network port group to connect to the DF
+        tool_pg_name = args.output      # Name for the tool port group to connect to the DF
+        df_mode = args.mode             # Mode for Dynamic Filter
+        criteria_file = args.criteria   # File with dynamic filter criteria in JSON format
+        df_criteria = None              # Criteria for Dynamic Filter after pasing criteria_file
+
         if df_criteria_required(df_mode):
             if criteria_file == None:
                 print ("Error: criteria file is requied for dynamic filter mode %s" % (df_mode))
