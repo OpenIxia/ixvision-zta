@@ -8,3 +8,4 @@ lib/*
 include/*
 VisionNPB
 *.pyc
+.DS_Store
