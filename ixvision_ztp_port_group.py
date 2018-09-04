@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Zero-Touch Provisioning script (playbook) for a Ixia Vision NPB
 # Form a port group based on keywords the ports are tagged with
 

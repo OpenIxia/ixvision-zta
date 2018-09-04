@@ -7,6 +7,7 @@ import argparse
 import threading
 import json
 
+from ixvision_ztp_lldp_tag import *
 from ixvision_ztp_port_group import *
 from ixvision_ztp_filter import *
 
@@ -72,7 +73,13 @@ port = args.port
 
 if args.subparser_name in ztp_actions_choices:
     print ('Starting %s for %s' % (ztp_actions_choices[args.subparser_name], host))
-    if args.subparser_name == 'pgform':
+    if args.subparser_name == 'lldptag':
+        # Task-specific parameters
+        tags = args.tag.split(",")          # A list of keywords to match LLDP info againts
+        
+        tag_ports(host, port, username, password, tags)
+        
+    elif args.subparser_name == 'pgform':
         # Task-specific parameters
         tags = args.tag.upper().split(",")  # A list of keywords to match port keywords info againts. NTO keywords are always in upper case
         port_group_name = args.name         # Name for the group to use (in order to avoid referencing automatically generated group number)
