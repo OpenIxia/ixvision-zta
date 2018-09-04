@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Zero-Touch Provisioning script (playbook) for a Ixia Vision NPB
 # Create/update a dynamic filter between network and tool port groups 
 
@@ -11,14 +9,9 @@
 # 4. Search for network port group with a specified name and, if found, connect it to the input of the DF
 # 5. Search for tool port group with a specified name and, if found, connect it to the output of the DF
 
-
-import sys
-import getopt
-import threading
-import json
 from ixia_nto import *
 
-# DEFINE GLOBAL VARs HERE
+# DEFINE VARs HERE
 # NOTE - Priority-based filtering mode is not supported, but we don't check if the system is in such mode
 df_modes_supported = {'all': 'PASS_ALL', 'none': 'DISABLE', 'pbc': 'PASS_BY_CRITERIA', 'dbc': 'DENY_BY_CRITERIA', 'pbcu': 'PBC_UNMATCHED', 'dbcm': 'DBC_MATCHED'}
 
@@ -129,121 +122,3 @@ def form_dynamic_filter(host_ip, port, username, password, df_name, input_pg_nam
     # TODO update DF connections only if there is an actual change in list of PGs connected to it
     df_params.update({'source_port_group_list': ztp_df_source_port_group_id_list, 'dest_port_group_list': ztp_df_dest_port_group_id_list})
     nto.modifyFilter(str(ztp_df['id']), df_params)
-
-# Main thread
-
-argv = sys.argv[1:]
-username = ''
-password = ''
-df_name = ''            # Name for Dynamic Filter to work with
-network_pg_name = ''    # Name for the network port group to connect to the DF
-tool_pg_name = ''       # Name for the tool port group to connect to the DF
-df_mode = ''            # Mode for Dynamic Filter
-criteria_file = ''      # File with dynamic filter criteria in JSON format
-df_criteria = None      # Criteria for Dynamic Filter after pasing criteria_file
-host = ''
-hosts_file = ''
-config_file = ''
-port = 8000
-
-usage = 'ixvision_ztp_filter.py -u <username> -p <password> -n <dynamic_filter_name> -i <network_port_group_name> -o <tool_port_group_name> -m all|none|pbc|dbc|pbcu|dbcm -c <filter_criteria_file> [-h <hosts> | -f <host_file>] [-r port]'
-
-try:
-    opts, args = getopt.getopt(argv,"u:p:h:f:r:n:i:o:m:c:", ["username=", "password=", "host=", "hosts_file=", "port=", "name=", "input=", "output=", "mode=", "criteria_file="])
-except getopt.GetoptError:
-    print usage
-    sys.exit(2)
-for opt, arg in opts:
-    if opt in ("-u", "--username"):
-        username = arg
-    elif opt in ("-p", "--password"):
-        password = arg
-    elif opt in ("-n", "--name"):
-        df_name = arg
-    elif opt in ("-i", "--input"):
-        network_pg_name = arg
-    elif opt in ("-o", "--output"):
-        tool_pg_name = arg
-    elif opt in ("-m", "--mode"):
-        if arg.lower() in df_modes_supported.keys():
-            df_mode = arg
-        else:
-            print("Unsupported filter mode %s" % (arg))
-    elif opt in ("-c", "--criteria_file"):
-        criteria_file = arg
-    elif opt in ("-h", "--host"):
-        host = arg
-    elif opt in ("-f", "--hosts_file"):
-        hosts_file = arg
-    elif opt in ("-r", "--port"):
-        port = arg
-
-if username == '' or password == '':
-    print usage
-    sys.exit(2)
-
-if (host == '') and (hosts_file == ''):
-    print usage
-    sys.exit(2)
-
-if df_name == '' or network_pg_name == '' or tool_pg_name == '' or df_mode == '':
-    print usage
-    sys.exit(2)
-    
-if df_criteria_required(df_mode) and criteria_file == '':
-    print ("Error: criteria file is requied for dynamic filter mode %s" % (df_mode))
-    sys.exit(2)
-
-if criteria_file != '':
-    parse_failed = False
-    try:
-        with open(criteria_file) as f:
-            try:
-                df_criteria = json.load(f)
-                print("Filter criteria has been loaded")
-            except:
-                print("Error: can't parse filter criteria")
-                parse_failed = True
-                sys.exit(2)
-    except:
-        if not parse_failed:
-            print("Error: can't read the file with filter criteria")
-        sys.exit(2)
-
-hosts_list = []
-if (hosts_file != ''):
-    f = open(hosts_file, 'r')
-    for line in f:
-        line = line.strip()
-        if (line != '') and (line[0] != '#'):
-            hosts_list.append(line.split(' '))
-    f.close()
-else:
-    hosts_list.append([host, host])
-
-threads_list = []
-for host in hosts_list:
-    host_ip = host[0]
-    
-    print("DEBUG: Starting thread for %s" % (host_ip))
-    thread = threading.Thread(name=host, target=form_dynamic_filter, args=(host_ip, port, username, password, df_name, network_pg_name, tool_pg_name, df_mode, df_criteria))
-    threads_list.append(thread)
-
-for thread in threads_list:
-    thread.daemon = True
-    thread.start()
-
-try:
-    while threading.active_count() > 1:
-        for thread in threads_list:
-            thread.join(1)
-        sys.stdout.write('.')
-        sys.stdout.flush()
-except KeyboardInterrupt:
-    print "Ctrl-c received! Sending kill to threads..."
-    sys.exit()
-print ""
-
-
-
-
