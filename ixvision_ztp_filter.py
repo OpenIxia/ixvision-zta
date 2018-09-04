@@ -35,7 +35,15 @@ def search_port_group_id_list(nto, params):
     for pg in pg_list:
         pg_id_list.append(pg['id'])
     return pg_id_list
-    
+
+## Remove empty port groups from a list if port group IDs
+def remove_empty_port_groups_from_id_list(nto, pg_id_list):
+    non_empty_pg_id_list = []
+    for pg_id in pg_id_list:
+        pg_port_list = nto.getPortGroupProperty(str(pg_id), 'port_list')
+        if isinstance(pg_port_list, list) and len(pg_port_list) > 0:
+            non_empty_pg_id_list.append(pg_id)
+    return non_empty_pg_id_list
 
 ## Filter create/update
 
@@ -112,9 +120,11 @@ def form_dynamic_filter(host_ip, port, username, password, df_name, input_pg_nam
         
     # TODO update DF criteria
     
-    # Search for network and tool port groups
-    ztp_df_source_port_group_id_list.extend(search_port_group_id_list(nto, {'name': input_pg_name}))
-    ztp_df_dest_port_group_id_list.extend  (search_port_group_id_list(nto, {'name': output_pg_name}))
+    # Search for network and tool port groups matching given names. 
+    # Make sure they are not empty before connecting to filters, since ports can't be added later to an empty but connected port group
+            
+    ztp_df_source_port_group_id_list.extend(remove_empty_port_groups_from_id_list(nto, search_port_group_id_list(nto, {'name': input_pg_name})))
+    ztp_df_dest_port_group_id_list.extend  (remove_empty_port_groups_from_id_list(nto, search_port_group_id_list(nto, {'name': output_pg_name})))
     
     # TODO update DF connections only if there is an actual change in list of PGs connected to it
     df_params.update({'source_port_group_list': ztp_df_source_port_group_id_list, 'dest_port_group_list': ztp_df_dest_port_group_id_list})
