@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Zero-Touch Provisioning script (playbook) for a Ixia Vision NPB
 # Perform initial NPB configuration, run through port discovery.
 # End goal is to have a managable system with LLDP neighbours being observed for further ZTP configuration steps
@@ -10,10 +8,6 @@
 # 4. Perform port discovery - cycle through all supported port speeds to brning all possible links up [FOCUS]
 # 5. Disable all the ports that stayed down, tag the ports that came up as configured by ZTP
 
-import sys
-import getopt
-import threading
-import json
 from ixia_nto import *
 
 # DEFINE FUNCTIONS HERE
@@ -45,7 +39,7 @@ from ixia_nto import *
 
 # Quiery NPB for port configs and status
 # Use optional keyword to limit the inventory scope to ports tagged by matching keyword
-def portInventory(host_ip, port, username, password, keyword=''):
+def discover_ports(host_ip, port, username, password, keyword=''):
 
     nto = NtoApiClient(host=host_ip, username=username, password=password, port=port, debug=True, logFile="ixvision_ztp_debug.log")
 
@@ -53,13 +47,12 @@ def portInventory(host_ip, port, username, password, keyword=''):
 
     # Enumerate disabled ports - we are not touching anything that can already carry traffic
     searchTerms = {'enabled':False}
-    if keyword != '':
+    if keyword != None and keyword != '':
         # Limit ZTP scope by a keyword if provided
         searchTerms = {"keywords":[keyword],'enabled':False}
         
     for ntoPort in nto.searchPorts(searchTerms):
         ntoPortDetails = nto.getPort(str(ntoPort['id']))
-        print("DEBUG: Collected port %s:%s configuration" % (host_ip, ntoPortDetails['default_name']))
         discoveredPortList[ntoPort['id']] = {'name': ntoPortDetails['default_name'], 'type': 'port', 'ZTPSucceeded': False, 'details': ntoPortDetails}
         
     if len(discoveredPortList) == 0:
@@ -77,23 +70,23 @@ def portInventory(host_ip, port, username, password, keyword=''):
             # Enable such ports
             if 'enabled' in port['details']:
                 nto.modifyPort(str(port_id), {'enabled': True})
-                print("DEBUG: Enabled port %s:%s" % (host_ip, port['details']['default_name']))
+                print("Enabled port %s:%s" % (host_ip, port['details']['default_name']))
         else:
             if port['details']['media_type'] == 'SFP_1G':
                 # Convert such ports to 10G
                 nto.modifyPort(str(port_id), {'media_type': 'SFP_PLUS_10G','link_settings': '10G_FULL'})
-                print("DEBUG: Converted port %s:%s to 10G" % (host_ip, port['details']['default_name']))
+                print("Converted port %s:%s to 10G" % (host_ip, port['details']['default_name']))
             if port['details']['mode'] != 'NETWORK':
                 # Convert such ports to NETWORK
                 nto.modifyPort(str(port_id), {'mode': 'NETWORK'})
-                print("DEBUG: Converted port %s:%s to NETWORK" % (host_ip, port['details']['default_name']))
+                print("Converted port %s:%s to NETWORK" % (host_ip, port['details']['default_name']))
             # Validate new settings took effect
             portDetails = nto.getPort(str(port_id))
             if portDetails['media_type'] == 'SFP_PLUS_10G' and portDetails['mode'] == 'NETWORK':
                 # Enable the port
                 if 'enabled' in port['details']:
                     nto.modifyPort(str(port_id), {'enabled': True})
-                    print("DEBUG: Enabled port %s:%s" % (host_ip, port['details']['default_name']))
+                    print("Enabled port %s:%s" % (host_ip, port['details']['default_name']))
                     
     # Pause the thread to give the ports a chance to come up
     time.sleep(10)
@@ -103,7 +96,7 @@ def portInventory(host_ip, port, username, password, keyword=''):
     for port_id in discoveredPortList:
         port = discoveredPortList[port_id]
         ntoPortDetails = nto.getPort(str(port_id))
-        print("DEBUG: Collected port %s:%s status:" % (host_ip, ntoPortDetails['default_name'])),
+        print("Collected port %s:%s status:" % (host_ip, ntoPortDetails['default_name'])),
         if ntoPortDetails['link_status']['link_up']:
             print('UP')
             discoveredPortList[port_id] = {'ZTPSucceeded': True}
@@ -119,7 +112,7 @@ def portInventory(host_ip, port, username, password, keyword=''):
         portDetails = port['details']
         if not portDetails['link_status']['link_up'] and portDetails['enabled'] and portDetails['media_type'] == 'SFP_PLUS_10G':
             nto.modifyPort(str(port_id), {'media_type': 'SFP_1G','link_settings': 'AUTO','mode': 'NETWORK'})
-            print("DEBUG: Converted port %s:%s to 1G/Auto, NETWORK" % (host_ip, port['details']['default_name']))
+            print("Converted port %s:%s to 1G/Auto, NETWORK" % (host_ip, port['details']['default_name']))
         
     # Pause the thread to give the ports a chance to come up
     time.sleep(10)
@@ -130,7 +123,7 @@ def portInventory(host_ip, port, username, password, keyword=''):
     for port_id in discoveredPortList:
         port = discoveredPortList[port_id]
         ntoPortDetails = nto.getPort(str(port_id))
-        print("DEBUG: Collected port %s:%s status:" % (host_ip, ntoPortDetails['default_name'])),
+        print("Collected port %s:%s status:" % (host_ip, ntoPortDetails['default_name'])),
         if ntoPortDetails['link_status']['link_up']:
             print('UP')
             discoveredPortList[port_id] = {'ZTPSucceeded': True}
@@ -148,90 +141,12 @@ def portInventory(host_ip, port, username, password, keyword=''):
         if port['ZTPSucceeded']:
             if 'lldp_receive_enabled' in portDetails: # check if this port has LLDP support before enabling it
                 nto.modifyPort(str(port_id), {'lldp_receive_enabled': True, 'keywords': ['_ZTP_LLDP']})
-                print("DEBUG: Enabled LLDP on port %s:%s" % (host_ip, port['details']['default_name']))
+                print("Enabled LLDP on port %s:%s" % (host_ip, port['details']['default_name']))
             else:
-                print("DEBUG: Port %s:%s doesn't have LLDP RX capabilities" % (host_ip, port['details']['default_name']))
+                print("Port %s:%s doesn't have LLDP RX capabilities" % (host_ip, port['details']['default_name']))
         else:
             nto.modifyPort(str(port_id), {'enabled': False, 'media_type': 'SFP_PLUS_10G', 'link_settings': '10G_FULL', 'mode': 'NETWORK'})
-            print("DEBUG: Converted port %s:%s to 10G, NETWORK and DISABLED" % (host_ip, port['details']['default_name']))
-
-
-# Main thread
-
-argv = sys.argv[1:]
-username = ''
-password = ''
-keyword = ''    # USING KEYWORD ARG HERE TEMP TO DEFINE ZTP SCOPE
-host = ''
-hosts_file = ''
-config_file = ''
-port = 8000
-
-try:
-    opts, args = getopt.getopt(argv,"u:p:k:h:f:r:", ["username=", "password=", "keyword=", "host=", "hosts_file=", "port="])
-except getopt.GetoptError:
-    print 'ixvision_ztp.py -u <username> -p <password> [-h <hosts> | -f <host_file>] [-r port] [-k <keyword>]'
-    sys.exit(2)
-for opt, arg in opts:
-    if opt in ("-u", "--username"):
-        username = arg
-    elif opt in ("-p", "--password"):
-        password = arg
-    elif opt in ("-k", "--keyword"):
-        keyword = arg
-    elif opt in ("-h", "--host"):
-        host = arg
-    elif opt in ("-f", "--hosts_file"):
-        hosts_file = arg
-    elif opt in ("-r", "--port"):
-        port = arg
-
-if username == '':
-    print 'ixvision_ztp.py -u <username> -p <password> [-h <hosts> | -f <host_file>] [-r port] [-k <keyword>]'
-    sys.exit(2)
-
-if password == '':
-    print 'ixvision_ztp.py -u <username> -p <password> [-h <hosts> | -f <host_file>] [-r port] [-k <keyword>]'
-    sys.exit(2)
-
-if (host == '') and (hosts_file == ''):
-    print 'ixvision_ztp.py -u <username> -p <password> [-h <hosts> | -f <host_file>] [-r port] [-k <keyword>]'
-    sys.exit(2)
-
-hosts_list = []
-if (hosts_file != ''):
-    f = open(hosts_file, 'r')
-    for line in f:
-        line = line.strip()
-        if (line != '') and (line[0] != '#'):
-            hosts_list.append(line.split(' '))
-    f.close()
-else:
-    hosts_list.append([host, host])
-
-threads_list = []
-for host in hosts_list:
-    host_ip = host[0]
-    
-    print("DEBUG: Starting thread for %s" % (host_ip))
-    thread = threading.Thread(name=host, target=portInventory, args=(host_ip, port, username, password, keyword))
-    threads_list.append(thread)
-
-for thread in threads_list:
-    thread.daemon = True
-    thread.start()
-
-try:
-    while threading.active_count() > 1:
-        for thread in threads_list:
-            thread.join(1)
-        sys.stdout.write('.')
-        sys.stdout.flush()
-except KeyboardInterrupt:
-    print "Ctrl-c received! Sending kill to threads..."
-    sys.exit()
-print ""
-
+            print("Converted port %s:%s to 10G, NETWORK and DISABLED" % (host_ip, port['details']['default_name']))
 
 
 

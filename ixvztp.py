@@ -7,6 +7,7 @@ import argparse
 import threading
 import json
 
+from ixvision_ztp_port_discovery import *
 from ixvision_ztp_lldp_tag import *
 from ixvision_ztp_port_group import *
 from ixvision_ztp_filter import *
@@ -20,11 +21,6 @@ ztp_actions_choices = {'portup': 'port status discovery', \
                         'lldptag': 'lldp-based port tagging', \
                         'pgform' : 'port group formation', \
                         'dfform' : 'dynamic filter formation'}
-
-ztp_actions_usage = {'portup': '[-k <keyword>]', \
-                        'lldptag': '-t <tag1>,<tag2>,...', \
-                        'pgform' : '-t <tag1>,<tag2>,... -n <port_group_name> -m net|lb', \
-                        'dfform' : '-n <dynamic_filter_name> -i <network_port_group_name> -o <tool_port_group_name> -m all|none|pbc|dbc|pbcu|dbcm -c <filter_criteria_file>'}
 
 # DEFINE GLOBAL FUNCTIONS HERE
 
@@ -73,7 +69,13 @@ port = args.port
 
 if args.subparser_name in ztp_actions_choices:
     print ('Starting %s for %s' % (ztp_actions_choices[args.subparser_name], host))
-    if args.subparser_name == 'lldptag':
+    if args.subparser_name == 'portup':
+        # Task-specific parameters
+        keyword = args.keyword              # USING KEYWORD ARG HERE TO DEFINE ZTP SCOPE
+        
+        discover_ports(host, port, username, password, keyword)
+        
+    elif args.subparser_name == 'lldptag':
         # Task-specific parameters
         tags = args.tag.split(",")          # A list of keywords to match LLDP info againts
         
