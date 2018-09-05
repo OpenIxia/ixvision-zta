@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Zero-Touch Provisioning script for a Ixia Vision NPB
+# Zero-Touch Provisioning script for Ixia Vision Network Packet Brokers
 
 import sys
 import argparse
@@ -17,10 +17,10 @@ from ixvision_ztp_filter import *
 debug_on = False
 
 # Possible actions and usage arguments help sting
-ztp_actions_choices = {'portup': 'port status discovery', \
-                        'lldptag': 'lldp-based port tagging', \
-                        'pgform' : 'port group formation', \
-                        'dfform' : 'dynamic filter formation'}
+ztp_actions_choices = {'portup': 'Performs link status discovery for all currently disabled ports. Successfully connected ports would be configured in Network (ingress) mode.', \
+                        'lldptag': 'Search for LLDP neighbor port descriptions that match one or more supplied tags. Tag the ports, connected to the matched neighbors, with corresponding keywords.', \
+                        'pgform' : 'Form a group of ports that have keywords matching supplied tags. Both Network and Tool Port Groups are supported.', \
+                        'dfform' : 'Form a dynamic filter with specified input, output and filtering mode.'}
 
 # DEFINE GLOBAL FUNCTIONS HERE
 
@@ -28,7 +28,7 @@ ztp_actions_choices = {'portup': 'port status discovery', \
 # Main thread
 
 # CLI arguments parser
-parser = argparse.ArgumentParser(prog='ixvztp.py', description='Zero-Touch Provisioning script for a Ixia Vision NPB.')
+parser = argparse.ArgumentParser(prog='ixvztp.py', description='Zero-Touch Provisioning script for Ixia Vision Network Packet Brokers.')
 parser.add_argument('-u', '--username', required=True)
 parser.add_argument('-p', '--password', required=True)
 parser.add_argument('-d', '--hostname', required=True)
@@ -37,22 +37,22 @@ parser.add_argument('-r', '--port', default='8000')
 
 subparsers = parser.add_subparsers(dest='subparser_name')
 portup_parser = subparsers.add_parser('portup', description=ztp_actions_choices['portup'])
-portup_parser.add_argument('-k', '--keyword')
+portup_parser.add_argument('-k', '--keyword', help='Limit discovery to only ports with specified keyword')
 
 lldptag_parser = subparsers.add_parser('lldptag', description=ztp_actions_choices['lldptag'])
-lldptag_parser.add_argument('-t', '--tag', required=True)
+lldptag_parser.add_argument('-t', '--tag', required=True, help='Comma-separated list of tags to search for in LLDP neighbor port descriptions')
 
 pgform_parser = subparsers.add_parser('pgform', description=ztp_actions_choices['pgform'])
-pgform_parser.add_argument('-t', '--tag', required=True)
-pgform_parser.add_argument('-n', '--name', required=True)
-pgform_parser.add_argument('-m', '--mode', required=True, choices=pg_modes_supported.keys())
+pgform_parser.add_argument('-t', '--tag', required=True, help='Comma-separated list of tags to search for in NPB port keywords')
+pgform_parser.add_argument('-n', '--name', required=True, help='Port Group name. Can be either an existing PG or a new one')
+pgform_parser.add_argument('-m', '--mode', required=True, help='Port Group mode: net for combining network ports, lb for load-balancing across tool ports', choices=pg_modes_supported.keys())
 
 dfform_parser = subparsers.add_parser('dfform', description=ztp_actions_choices['dfform'])
-dfform_parser.add_argument('-n', '--name', required=True)
-dfform_parser.add_argument('-i', '--input', required=True)
-dfform_parser.add_argument('-o', '--output', required=True)
-dfform_parser.add_argument('-m', '--mode', required=True, choices=df_modes_supported.keys())
-dfform_parser.add_argument('-c', '--criteria')
+dfform_parser.add_argument('-n', '--name', required=True, help='Dynamic Filter name. Can be either an existing PG or a new one')
+dfform_parser.add_argument('-i', '--input', required=True, help='Input port group to connect')
+dfform_parser.add_argument('-o', '--output', required=True, help='Output port group to connect')
+dfform_parser.add_argument('-m', '--mode', required=True, help='Filtering mode: all - pass any traffic, none - block any traffic, pbc - pass by criteria, dbc - deny by criteria, pbcu - pass traffic unmatched by any other filter, dbcm - pass traffic denied by other filters', choices=df_modes_supported.keys())
+dfform_parser.add_argument('-c', '--criteria', help='A JSON file with criteria to use for pbc/dbc filtering modes.')
 
 
 # Common parameters
