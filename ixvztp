@@ -22,13 +22,18 @@ ztp_actions_choices = {'portup': 'Performs link status discovery for all current
                         'pgform' : 'Form a group of ports that have keywords matching supplied tags. Both Network and Tool Port Groups are supported.', \
                         'dfform' : 'Form a dynamic filter with specified input, output and filtering mode.'}
 
+ztp_actions_helper = {'portup': 'port status discovery', \
+                      'lldptag': 'lldp-based port tagging', \
+                      'pgform' : 'port group formation', \
+                      'dfform' : 'dynamic filter formation'}
+
 # DEFINE GLOBAL FUNCTIONS HERE
 
 # ****************************************************************************************** #
 # Main thread
 
 # CLI arguments parser
-parser = argparse.ArgumentParser(prog='ixvztp.py', description='Zero-Touch Provisioning script for Ixia Vision Network Packet Brokers.')
+parser = argparse.ArgumentParser(prog='ixvztp', description='Zero-Touch Provisioning script for Ixia Vision Network Packet Brokers.')
 parser.add_argument('-u', '--username', required=True)
 parser.add_argument('-p', '--password', required=True)
 parser.add_argument('-d', '--hostname', required=True)
@@ -68,7 +73,7 @@ port = args.port
 
 
 if args.subparser_name in ztp_actions_choices:
-    print ('Starting %s for %s' % (ztp_actions_choices[args.subparser_name], host))
+    print ('Starting %s for %s' % (ztp_actions_helper[args.subparser_name], host))
     if args.subparser_name == 'portup':
         # Task-specific parameters
         keyword = args.keyword              # USING KEYWORD ARG HERE TO DEFINE ZTP SCOPE
