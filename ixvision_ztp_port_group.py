@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Zero-Touch Provisioning script (playbook) for a Ixia Vision NPB
 # Form a port group based on keywords the ports are tagged with
 
@@ -10,12 +8,11 @@
 # 4. Search for enabled ports with matching keywords that are not yet members of any group and don't have any connections to/from them. Add all such ports to the group, change port mode if nessesary
 # 5. For all exising port group members, check keywords and if any have no match, remove them from the port group and set to a default configuration (Network Port, no connections)
 
-
-import sys
-import getopt
-import threading
-import json
 from ixia_nto import *
+
+# DEFINE VARs HERE
+pg_modes_supported = {'net': 'INTERCONNECT', 'lb': 'LOAD_BALANCE'}
+
 
 # DEFINE FUNCTIONS HERE
 
@@ -119,107 +116,5 @@ def form_port_groups(host_ip, port, username, password, tags, pg_name, pg_mode_k
         
     nto.modifyPortGroup(str(ztp_port_group['id']), {'port_list': matching_port_id_list + ztp_port_group_port_list})
     print("Added %d ports to port group %s" % (len(matching_port_id_list), pg_name))
-
-
-
-
-# Main thread
-
-argv = sys.argv[1:]
-username = ''
-password = ''
-tags = []               # A list of keywords to match port keywords info againts
-port_group_name = ''    # Name for the group to use (in order to avoid referencing automatically generated group number)
-port_group_mode = ''    # (net) for NETWORK, (lb) for LOAD_BALANCE - no other modes are supported yet
-host = ''
-hosts_file = ''
-config_file = ''
-port = 8000
-
-usage = 'ixvision_ztp_port_group.py -u <username> -p <password> -t <tag1>,<tag2>,... -n <port_group_name> -m net|lb [-h <hosts> | -f <host_file>] [-r port]'
-
-try:
-    opts, args = getopt.getopt(argv,"u:p:h:f:r:t:n:m:", ["username=", "password=", "host=", "hosts_file=", "port=", "tags=", "name=", "mode="])
-except getopt.GetoptError:
-    print usage
-    sys.exit(2)
-for opt, arg in opts:
-    if opt in ("-u", "--username"):
-        username = arg
-    elif opt in ("-p", "--password"):
-        password = arg
-    elif opt in ("-t", "--tags"):
-        tags = arg.upper().split(",")  # NTO keywords are always in upper case
-    elif opt in ("-n", "--name"):
-        port_group_name = arg
-    elif opt in ("-m", "--mode"):
-        port_group_mode = arg
-    elif opt in ("-h", "--host"):
-        host = arg
-    elif opt in ("-f", "--hosts_file"):
-        hosts_file = arg
-    elif opt in ("-r", "--port"):
-        port = arg
-
-if username == '':
-    print usage
-    sys.exit(2)
-
-if password == '':
-    print usage
-    sys.exit(2)
-
-if (host == '') and (hosts_file == ''):
-    print usage
-    sys.exit(2)
-
-if len(tags) == 0:
-    print usage
-    sys.exit(2)
-
-if port_group_name == '':
-    print usage
-    sys.exit(2)
-
-if port_group_mode != 'net' and port_group_mode != 'lb':
-    print usage
-    sys.exit(2)
-
-
-hosts_list = []
-if (hosts_file != ''):
-    f = open(hosts_file, 'r')
-    for line in f:
-        line = line.strip()
-        if (line != '') and (line[0] != '#'):
-            hosts_list.append(line.split(' '))
-    f.close()
-else:
-    hosts_list.append([host, host])
-
-threads_list = []
-for host in hosts_list:
-    host_ip = host[0]
-    
-    print("DEBUG: Starting thread for %s" % (host_ip))
-    thread = threading.Thread(name=host, target=form_port_groups, args=(host_ip, port, username, password, tags, port_group_name, port_group_mode))
-    threads_list.append(thread)
-
-for thread in threads_list:
-    thread.daemon = True
-    thread.start()
-
-try:
-    while threading.active_count() > 1:
-        for thread in threads_list:
-            thread.join(1)
-        sys.stdout.write('.')
-        sys.stdout.flush()
-except KeyboardInterrupt:
-    print "Ctrl-c received! Sending kill to threads..."
-    sys.exit()
-print ""
-
-
 
 
