@@ -7,6 +7,7 @@ import argparse
 import threading
 import json
 
+from ixvision_ztp_sysinfo import *
 from ixvision_ztp_port_discovery import *
 from ixvision_ztp_lldp_tag import *
 from ixvision_ztp_port_group import *
@@ -17,12 +18,14 @@ from ixvision_ztp_filter import *
 debug_on = False
 
 # Possible actions and usage arguments help sting
-ztp_actions_choices = {'portup': 'Performs link status discovery for all currently disabled ports. Successfully connected ports would be configured in Network (ingress) mode.', \
-                        'lldptag': 'Search for LLDP neighbor port descriptions that match one or more supplied tags. Tag the ports, connected to the matched neighbors, with corresponding keywords.', \
-                        'pgform' : 'Form a group of ports that have keywords matching supplied tags. Both Network and Tool Port Groups are supported.', \
-                        'dfform' : 'Form a dynamic filter with specified input, output and filtering mode.'}
+ztp_actions_choices = {'sysinfo': 'Display system information', \
+                       'portup': 'Performs link status discovery for all currently disabled ports. Successfully connected ports would be configured in Network (ingress) mode.', \
+                       'lldptag': 'Search for LLDP neighbor port descriptions that match one or more supplied tags. Tag the ports, connected to the matched neighbors, with corresponding keywords.', \
+                       'pgform' : 'Form a group of ports that have keywords matching supplied tags. Both Network and Tool Port Groups are supported.', \
+                       'dfform' : 'Form a dynamic filter with specified input, output and filtering mode.'}
 
-ztp_actions_helper = {'portup': 'port status discovery', \
+ztp_actions_helper = {'sysinfo': 'system information inquiry',\
+                      'portup': 'port status discovery', \
                       'lldptag': 'lldp-based port tagging', \
                       'pgform' : 'port group formation', \
                       'dfform' : 'dynamic filter formation'}
@@ -41,6 +44,8 @@ parser.add_argument('-r', '--port', default='8000')
 
 
 subparsers = parser.add_subparsers(dest='subparser_name')
+sysinfo_parser = subparsers.add_parser('sysinfo', description=ztp_actions_choices['sysinfo'])
+
 portup_parser = subparsers.add_parser('portup', description=ztp_actions_choices['portup'])
 portup_parser.add_argument('-k', '--keyword', help='Limit discovery to only ports with specified keyword')
 
@@ -74,7 +79,10 @@ port = args.port
 
 if args.subparser_name in ztp_actions_choices:
     print ('Starting %s for %s' % (ztp_actions_helper[args.subparser_name], host))
-    if args.subparser_name == 'portup':
+    if args.subparser_name == 'sysinfo':
+        nto_get_sysinfo(host, port, username, password)
+        
+    elif args.subparser_name == 'portup':
         # Task-specific parameters
         keyword = args.keyword              # USING KEYWORD ARG HERE TO DEFINE ZTP SCOPE
         
