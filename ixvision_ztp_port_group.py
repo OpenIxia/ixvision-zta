@@ -88,7 +88,7 @@ def form_port_groups(host_ip, port, username, password, tags, pg_name, pg_mode_k
     port_list = nto.searchPorts({'enabled': True, 'port_group_id': None, 'dest_filter_list': [], 'source_filter_list': []})
     matching_port_id_list = []
     for port in port_list:
-        port_details = nto.getPortProperties(str(port['id']), 'id,keywords,mode')
+        port_details = nto.getPortProperties(str(port['id']), 'id,keywords,mode,lldp_transmit_enabled')
         if port_details is not None:
             for keyword in tags:
                 if keyword in port_details['keywords'] and port['id'] not in matching_port_id_list:
@@ -96,9 +96,17 @@ def form_port_groups(host_ip, port, username, password, tags, pg_name, pg_mode_k
                         # Check and update port mode, if needed
                         if port_details['mode'] == pg_params['mode']:
                                 matching_port_id_list.append(port['id'])
+                                # Enable LLDP TX for tool ports, if supported
+                                if pg_params['mode'] == 'TOOL' and 'lldp_transmit_enabled' in port_details and not port_details['lldp_transmit_enabled']:
+                                    print("Enabling LLDP TX for port %s" % port['name'])
+                                    nto.modifyPort(str(port['id']), {'lldp_transmit_enabled': True})
                         else:
                             print("Convering port %s into %s mode" % (port['name'], pg_params['mode']))
-                            nto.modifyPort(str(port['id']), {'mode': pg_params['mode']})
+                            port_params = {'mode': pg_params['mode']}
+                            # Enable LLDP TX for tool ports, if supported
+                            if pg_params['mode'] == 'TOOL' and 'lldp_transmit_enabled' in port_details:
+                                port_params.update({'lldp_transmit_enabled': True})
+                            nto.modifyPort(str(port['id']), port_params)
                             # Check if the modification was successful and only add the port to the list of matching ports if yes
                             port_details = nto.getPortProperties(str(port['id']), 'id,keywords,mode')
                             if port_details is not None and port_details['mode'] == pg_params['mode']:
@@ -116,5 +124,4 @@ def form_port_groups(host_ip, port, username, password, tags, pg_name, pg_mode_k
         
     nto.modifyPortGroup(str(ztp_port_group['id']), {'port_list': matching_port_id_list + ztp_port_group_port_list})
     print("Added %d ports to port group %s" % (len(matching_port_id_list), pg_name))
-
-
+    
