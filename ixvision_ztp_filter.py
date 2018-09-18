@@ -11,6 +11,8 @@
 
 from ixia_nto import *
 
+from ixvision_ztp_ntolib import *
+
 # DEFINE VARs HERE
 # NOTE - Priority-based filtering mode is not supported, but we don't check if the system is in such mode
 df_modes_supported = {'all': 'PASS_ALL', 'none': 'DISABLE', 'pbc': 'PASS_BY_CRITERIA', 'dbc': 'DENY_BY_CRITERIA', 'pbcu': 'PBC_UNMATCHED', 'dbcm': 'DBC_MATCHED'}
@@ -47,7 +49,7 @@ def remove_empty_port_groups_from_id_list(nto, pg_id_list):
 # - Tool port group name
 # - DF mode - use keys from df_modes_supported global dict
 
-def form_dynamic_filter(host_ip, port, username, password, df_name, input_pg_name, output_pg_name, df_mode, df_criteria = {}):
+def form_dynamic_filter(host_ip, port, username, password, df_name, df_input, df_output, df_mode, df_criteria = {}, use_tag_mode = False):
     
     df_params = {}
     df_mode_value = 'DISABLE'                           # Default DF mode value for a new filter to use, if not overridden
@@ -113,12 +115,18 @@ def form_dynamic_filter(host_ip, port, username, password, df_name, input_pg_nam
         
     # TODO update DF criteria
     
-    # Search for network and tool port groups matching given names. 
-    # Make sure they are not empty before connecting to filters, since ports can't be added later to an empty but connected port group
+    if not use_tag_mode:
+        # Search for network and tool port groups matching given names. 
+        # Make sure they are not empty before connecting to filters, since ports can't be added later to an empty but connected port group
             
-    ztp_df_source_port_group_id_list.extend(remove_empty_port_groups_from_id_list(nto, search_port_group_id_list(nto, {'name': input_pg_name})))
-    ztp_df_dest_port_group_id_list.extend  (remove_empty_port_groups_from_id_list(nto, search_port_group_id_list(nto, {'name': output_pg_name})))
+        ztp_df_source_port_group_id_list.extend(remove_empty_port_groups_from_id_list(nto, search_port_group_id_list(nto, {'name': df_input})))
+        ztp_df_dest_port_group_id_list.extend  (remove_empty_port_groups_from_id_list(nto, search_port_group_id_list(nto, {'name': df_output})))
     
-    # TODO update DF connections only if there is an actual change in list of PGs connected to it
-    df_params.update({'source_port_group_list': ztp_df_source_port_group_id_list, 'dest_port_group_list': ztp_df_dest_port_group_id_list})
-    nto.modifyFilter(str(ztp_df['id']), df_params)
+        # TODO update DF connections only if there is an actual change in list of PGs connected to it
+        df_params.update({'source_port_group_list': ztp_df_source_port_group_id_list, 'dest_port_group_list': ztp_df_dest_port_group_id_list})
+        nto.modifyFilter(str(ztp_df['id']), df_params)
+    else:
+        # Connect input ports using tags
+        df_connect_via_tags(nto, str(ztp_df['id']), [df_input], 'input')
+        # Connect output ports using tags
+        df_connect_via_tags(nto, str(ztp_df['id']), [df_output], 'output')
