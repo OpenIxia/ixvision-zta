@@ -70,7 +70,7 @@ def form_dynamic_filter(host_ip, port, username, password, df_name, df_input, df
     ztp_df_dest_port_group_id_list = []
     if len(df_list) == 0:
         # No existing filter with such name, will create a new one
-        df_params.update({'name': df_name, 'keywords': ['_ZTP_LLDP'], 'mode': df_mode_value})
+        df_params.update({'name': df_name, 'keywords': ['ZTP'], 'mode': df_mode_value})
         if isinstance(df_criteria, dict) and len(df_criteria) > 0:
             df_params.update({'criteria': df_criteria})
         new_df = nto.createFilter(df_params, True) # the last parameter is for allowTemporayDataLoss
@@ -89,7 +89,7 @@ def form_dynamic_filter(host_ip, port, username, password, df_name, df_input, df
         ztp_df_dest_port_group_id_list = df_details['dest_port_group_list']
         print("Found an existing DF %s in %s mode" % (df_details['default_name'], df_details['mode']))
         df_needs_updating = False
-        # TODO update keywords with _ZTP_LLDP
+        # TODO update keywords with ZTP
         if df_mode_value != df_details['mode']:
             print("Updating DF %s to a new mode %s" % (df_details['default_name'], df_mode_value))
             df_params.update({'mode': df_mode_value})
@@ -130,3 +130,54 @@ def form_dynamic_filter(host_ip, port, username, password, df_name, df_input, df
         df_connect_via_tags(nto, str(ztp_df['id']), [df_input], 'input')
         # Connect output ports using tags
         df_connect_via_tags(nto, str(ztp_df['id']), [df_output], 'output')
+
+def update_dynamic_filter(host_ip, port, username, password, df_name, df_criteria_field, df_append_values, df_remove_values):
+    df_criterion = None
+    if isinstance(df_criteria_fields_supported, dict) and df_criteria_field in df_criteria_fields_supported.keys():
+        df_criterion = df_criteria_fields_supported[df_criteria_field]
+        
+    nto = NtoApiClient(host=host_ip, username=username, password=password, port=port, debug=True, logFile="ixvision_ztp_filter_debug.log")
+
+    # Search for the DF
+    df_list = nto.searchFilters({'name': df_name})
+    if len(df_list) == 0:
+        # No existing filter with such name
+        print("Error: can't find a dynamic filter with name %s" % df_name)
+        return
+    elif len(df_list) == 1:
+        # An existing DF found
+        df = df_list[0]
+        df_criteria = nto.getFilterProperty(str(df['id']), 'criteria') # TODO handle 404 not found situation
+        if df_criterion not in df_criteria.keys():
+            print("Criteria field %s is not in use by filter %s" % (df_criterion, df_name))
+            return
+        
+        for key in df_criteria[df_criterion]:
+            if key in df_append_values.keys():
+                if isinstance(df_criteria[df_criterion][key], list):
+                    df_criteria[df_criterion][key].extend(df_append_values[key])
+                else:
+                    df_criteria[df_criterion][key] = df_append_values[key]
+            if key in df_remove_values.keys():
+                if isinstance(df_criteria[df_criterion][key], list):
+                    for value in df_remove_values[key]:
+                        if value in df_criteria[df_criterion][key]:
+                            df_criteria[df_criterion][key].remove(value)
+                    
+        print("DEBUG: updated values %s" % df_criteria[df_criterion])
+        
+        nto.modifyFilter(str(df['id']), {'criteria': df_criteria})
+        
+    else:
+        # This should never happen, but just in case, provide details to look into
+        print("Found more than one DF named %s, can't continue:" % (df_name)),
+        for df in df_list:
+            df_details = nto.getFilter(str(df['id']))
+            if df_details is not None:
+                print (" %s," % (df_details['default_name'])),
+        print("")
+        return
+
+    
+    
+

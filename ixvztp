@@ -24,16 +24,33 @@ ztp_actions_choices = {'sysinfo': 'Display system information', \
                        'lldptag': 'Search for LLDP neighbor port descriptions that match one or more supplied tags. Tag the ports, connected to the matched neighbors, with corresponding keywords.', \
                        'portmode': 'Set port mode to the specified value for ports that match one or more supplied tags.', \
                        'pgform' : 'Form a group of ports that have keywords matching supplied tags. Both Network and Tool Port Groups are supported.', \
-                       'dfform' : 'Form a dynamic filter with specified input, output and filtering mode.'}
+                       'dfform' : 'Form a dynamic filter with specified input, output and filtering mode.',\
+                       'dfupdate': 'Update a dynamic filter with new criteria'}
 
 ztp_actions_helper = {'sysinfo': 'system information inquiry',\
                       'portup': 'port status discovery', \
                       'lldptag': 'lldp-based port tagging', \
                       'portmode': 'port mode update', \
                       'pgform' : 'port group formation', \
-                      'dfform' : 'dynamic filter formation'}
+                      'dfform' : 'dynamic filter formation',\
+                      'dfupdate': 'dynamic filter update'}
 
 # DEFINE GLOBAL FUNCTIONS HERE
+
+def load_json_from_file(filename):
+    data = None
+    parse_failed = False
+    try:
+        with open(filename) as f:
+            try:
+                data = json.load(f)
+            except:
+                parse_failed = True
+    except:
+        if not parse_failed:
+            print("Error: can't read from %s" % filename)
+        sys.exit(2)
+    return data
 
 # ****************************************************************************************** #
 # Main thread
@@ -72,6 +89,11 @@ dfform_parser.add_argument('-T', '--tag_mode', required=False, help='Execute in 
 dfform_parser.add_argument('-m', '--mode', required=True, help='Filtering mode: all - pass any traffic, none - block any traffic, pbc - pass by criteria, dbc - deny by criteria, pbcu - pass traffic unmatched by any other filter, dbcm - pass traffic denied by other filters', choices=df_modes_supported.keys())
 dfform_parser.add_argument('-c', '--criteria', help='A JSON file with criteria to use for pbc/dbc filtering modes.')
 
+dfudpate_parser = subparsers.add_parser('dfupdate', description=ztp_actions_choices['dfupdate'])
+dfudpate_parser.add_argument('-n', '--name', required=True, help='Name of the Dynamic Filter to update')
+dfudpate_parser.add_argument('-f', '--field', required=True, help='Criteria field to update')
+dfudpate_parser.add_argument('-a', '--append', required=False, help='Criteria field values to append')
+dfudpate_parser.add_argument('-x', '--remove', required=False, help='Criteria field values to remove')
 
 # Common parameters
 args = parser.parse_args()
@@ -149,7 +171,40 @@ if args.subparser_name in ztp_actions_choices:
                     if not parse_failed:
                         print("Error: can't read filter criteria from %s" % criteria_file)
                     sys.exit(2)
+                    
         form_dynamic_filter(host, port, username, password, df_name, df_input, df_output, df_mode, df_criteria, tag_mode)
+        
+    elif args.subparser_name == 'dfupdate':
+        # Task-specific parameters
+        df_name = args.name             # Name for Dynamic Filter to work with
+        df_criteria_field = args.field  # Criteria field to update
+        df_append_file = args.append    # File with values to append to the criteria field, in JSON format
+        df_remove_file = args.remove    # File with values to remove from the criteria field, in JSON format
+        df_append_values = {}
+        df_remove_values = {}
+        
+        if df_criteria_field not in df_criteria_fields_supported.keys():
+            print("Error: unsupported criteria field, use one from the list: %s" % " | ".join(df_criteria_fields_supported.keys()))
+            sys.exit(2)
+
+        if df_append_file == None and df_remove_file == None:
+            print("Error: both append and remove parameters are empty, need at least one or both")
+            sys.exit(2)
+            
+        if df_append_file != None:
+            df_append_values = load_json_from_file(df_append_file)
+            if df_append_values == None:
+                print("Error: can't parse filter values from %s" % df_append_file)
+                sys.exit(2)
+
+        if df_remove_file != None:
+            df_remove_values = load_json_from_file(df_remove_file)
+            if df_remove_values == None:
+                print("Error: can't parse filter values from %s" % df_remove_file)
+                sys.exit(2)
+
+        update_dynamic_filter(host, port, username, password, df_name, df_criteria_field, df_append_values, df_remove_values)
+        
     else:
         print ('Unsupported action %s' % args.subparser_name)
         sys.exit(2)
