@@ -10,6 +10,7 @@ import json
 from ixvision_ztp_sysinfo import *
 from ixvision_ztp_port_discovery import *
 from ixvision_ztp_lldp_tag import *
+from ixvision_ztp_port_mode import *
 from ixvision_ztp_port_group import *
 from ixvision_ztp_filter import *
 
@@ -21,12 +22,14 @@ debug_on = False
 ztp_actions_choices = {'sysinfo': 'Display system information', \
                        'portup': 'Performs link status discovery for all currently disabled ports. Successfully connected ports would be configured in Network (ingress) mode.', \
                        'lldptag': 'Search for LLDP neighbor port descriptions that match one or more supplied tags. Tag the ports, connected to the matched neighbors, with corresponding keywords.', \
+                       'portmode': 'Set port mode to the specified value for ports that match one or more supplied tags.', \
                        'pgform' : 'Form a group of ports that have keywords matching supplied tags. Both Network and Tool Port Groups are supported.', \
                        'dfform' : 'Form a dynamic filter with specified input, output and filtering mode.'}
 
 ztp_actions_helper = {'sysinfo': 'system information inquiry',\
                       'portup': 'port status discovery', \
                       'lldptag': 'lldp-based port tagging', \
+                      'portmode': 'port mode update', \
                       'pgform' : 'port group formation', \
                       'dfform' : 'dynamic filter formation'}
 
@@ -52,15 +55,20 @@ portup_parser.add_argument('-k', '--keyword', help='Limit discovery to only port
 lldptag_parser = subparsers.add_parser('lldptag', description=ztp_actions_choices['lldptag'])
 lldptag_parser.add_argument('-t', '--tag', required=True, help='Comma-separated list of tags to search for in LLDP neighbor port descriptions')
 
+portmode_parser = subparsers.add_parser('portmode', description=ztp_actions_choices['portmode'])
+portmode_parser.add_argument('-t', '--tag', required=True, help='Comma-separated list of tags to search for in NPB port keywords')
+portmode_parser.add_argument('-m', '--mode', required=True, help='Port mode: net for network ports, tool for tool ports', choices=port_modes_supported.keys())
+
 pgform_parser = subparsers.add_parser('pgform', description=ztp_actions_choices['pgform'])
 pgform_parser.add_argument('-t', '--tag', required=True, help='Comma-separated list of tags to search for in NPB port keywords')
 pgform_parser.add_argument('-n', '--name', required=True, help='Port Group name. Can be either an existing PG or a new one')
 pgform_parser.add_argument('-m', '--mode', required=True, help='Port Group mode: net for combining network ports, lb for load-balancing across tool ports', choices=pg_modes_supported.keys())
 
 dfform_parser = subparsers.add_parser('dfform', description=ztp_actions_choices['dfform'])
-dfform_parser.add_argument('-n', '--name', required=True, help='Dynamic Filter name. Can be either an existing PG or a new one')
-dfform_parser.add_argument('-i', '--input', required=True, help='Input port group to connect')
-dfform_parser.add_argument('-o', '--output', required=True, help='Output port group to connect')
+dfform_parser.add_argument('-n', '--name', required=True, help='Dynamic Filter name. Can be either an existing filter or a new one')
+dfform_parser.add_argument('-i', '--input', required=True, help='Input port group name to connect to the filter')
+dfform_parser.add_argument('-o', '--output', required=True, help='Output port group name to connect to the filter')
+dfform_parser.add_argument('-T', '--tag_mode', required=False, help='Execute in tag mode: interpret -i and -o values as tags, instead of port group names', action="store_true")
 dfform_parser.add_argument('-m', '--mode', required=True, help='Filtering mode: all - pass any traffic, none - block any traffic, pbc - pass by criteria, dbc - deny by criteria, pbcu - pass traffic unmatched by any other filter, dbcm - pass traffic denied by other filters', choices=df_modes_supported.keys())
 dfform_parser.add_argument('-c', '--criteria', help='A JSON file with criteria to use for pbc/dbc filtering modes.')
 
@@ -94,6 +102,13 @@ if args.subparser_name in ztp_actions_choices:
         
         tag_ports(host, port, username, password, tags)
         
+    elif args.subparser_name == 'portmode':
+        # Task-specific parameters
+        tags = args.tag.split(",")          # A list of keywords to search ports
+        mode = args.mode                    # (net) for NETWORK, (tool) for TOOL - no other modes are supported yet
+        
+        set_port_mode(host, port, username, password, tags, mode)
+        
     elif args.subparser_name == 'pgform':
         # Task-specific parameters
         tags = args.tag.upper().split(",")  # A list of keywords to match port keywords info againts. NTO keywords are always in upper case
@@ -105,11 +120,15 @@ if args.subparser_name in ztp_actions_choices:
     elif args.subparser_name == 'dfform':
         # Task-specific parameters
         df_name = args.name             # Name for Dynamic Filter to work with
-        network_pg_name = args.input    # Name for the network port group to connect to the DF
-        tool_pg_name = args.output      # Name for the tool port group to connect to the DF
+        df_input = args.input           # Name for the network port group to connect to the DF or tag for input ports in tag mode
+        df_output = args.output         # Name for the tool port group to connect to the DF or tag for output ports in tag mode
         df_mode = args.mode             # Mode for Dynamic Filter
         criteria_file = args.criteria   # File with dynamic filter criteria in JSON format
         df_criteria = None              # Criteria for Dynamic Filter after pasing criteria_file
+        if args.tag_mode:
+            tag_mode = True
+        else:
+            tag_mode = False
 
         if df_criteria_required(df_mode):
             if criteria_file == None:
@@ -130,7 +149,7 @@ if args.subparser_name in ztp_actions_choices:
                     if not parse_failed:
                         print("Error: can't read filter criteria from %s" % criteria_file)
                     sys.exit(2)
-        form_dynamic_filter(host, port, username, password, df_name, network_pg_name, tool_pg_name, df_mode, df_criteria)
+        form_dynamic_filter(host, port, username, password, df_name, df_input, df_output, df_mode, df_criteria, tag_mode)
     else:
         print ('Unsupported action %s' % args.subparser_name)
         sys.exit(2)
