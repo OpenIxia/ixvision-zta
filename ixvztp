@@ -10,6 +10,7 @@ import json
 from ixvision_ztp_sysinfo import *
 from ixvision_ztp_port_discovery import *
 from ixvision_ztp_lldp_tag import *
+from ixvision_ztp_port_mode import *
 from ixvision_ztp_port_group import *
 from ixvision_ztp_filter import *
 
@@ -21,12 +22,14 @@ debug_on = False
 ztp_actions_choices = {'sysinfo': 'Display system information', \
                        'portup': 'Performs link status discovery for all currently disabled ports. Successfully connected ports would be configured in Network (ingress) mode.', \
                        'lldptag': 'Search for LLDP neighbor port descriptions that match one or more supplied tags. Tag the ports, connected to the matched neighbors, with corresponding keywords.', \
+                       'portmode': 'Set port mode to the specified value for ports that match one or more supplied tags.', \
                        'pgform' : 'Form a group of ports that have keywords matching supplied tags. Both Network and Tool Port Groups are supported.', \
                        'dfform' : 'Form a dynamic filter with specified input, output and filtering mode.'}
 
 ztp_actions_helper = {'sysinfo': 'system information inquiry',\
                       'portup': 'port status discovery', \
                       'lldptag': 'lldp-based port tagging', \
+                      'portmode': 'port mode update', \
                       'pgform' : 'port group formation', \
                       'dfform' : 'dynamic filter formation'}
 
@@ -51,6 +54,10 @@ portup_parser.add_argument('-k', '--keyword', help='Limit discovery to only port
 
 lldptag_parser = subparsers.add_parser('lldptag', description=ztp_actions_choices['lldptag'])
 lldptag_parser.add_argument('-t', '--tag', required=True, help='Comma-separated list of tags to search for in LLDP neighbor port descriptions')
+
+portmode_parser = subparsers.add_parser('portmode', description=ztp_actions_choices['portmode'])
+portmode_parser.add_argument('-t', '--tag', required=True, help='Comma-separated list of tags to search for in NPB port keywords')
+portmode_parser.add_argument('-m', '--mode', required=True, help='Port mode: net for network ports, tool for tool ports', choices=port_modes_supported.keys())
 
 pgform_parser = subparsers.add_parser('pgform', description=ztp_actions_choices['pgform'])
 pgform_parser.add_argument('-t', '--tag', required=True, help='Comma-separated list of tags to search for in NPB port keywords')
@@ -94,6 +101,13 @@ if args.subparser_name in ztp_actions_choices:
         tags = args.tag.split(",")          # A list of keywords to match LLDP info againts
         
         tag_ports(host, port, username, password, tags)
+        
+    elif args.subparser_name == 'portmode':
+        # Task-specific parameters
+        tags = args.tag.split(",")          # A list of keywords to search ports
+        mode = args.mode                    # (net) for NETWORK, (tool) for TOOL - no other modes are supported yet
+        
+        set_port_mode(host, port, username, password, tags, mode)
         
     elif args.subparser_name == 'pgform':
         # Task-specific parameters

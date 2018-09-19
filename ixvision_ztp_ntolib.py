@@ -4,6 +4,7 @@
 from ixia_nto import *
 
 # DEFINE VARs HERE
+port_modes_supported = {'net': 'NETWORK', 'tool': 'TOOL'}
 df_connection_modes_supported = {'input': 'NETWORK', 'output': 'TOOL'}
 
 # DEFINE FUNCTIONS HERE
