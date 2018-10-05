@@ -135,6 +135,9 @@ def update_dynamic_filter(host_ip, port, username, password, df_name, df_criteri
     df_criterion = None
     if isinstance(df_criteria_fields_supported, dict) and df_criteria_field in df_criteria_fields_supported.keys():
         df_criterion = df_criteria_fields_supported[df_criteria_field]
+    else:
+        print("Error: unsupported filter criteria %s" % df_criteria_field)
+        return
         
     nto = NtoApiClient(host=host_ip, username=username, password=password, port=port, debug=True, logFile="ixvision_ztp_filter_debug.log")
 
@@ -164,9 +167,9 @@ def update_dynamic_filter(host_ip, port, username, password, df_name, df_criteri
                         if value in df_criteria[df_criterion][key]:
                             df_criteria[df_criterion][key].remove(value)
                     
-        print("DEBUG: updated values %s" % df_criteria[df_criterion])
-        
         nto.modifyFilter(str(df['id']), {'criteria': df_criteria})
+        # TODO validate the update was successful
+        print("Updated filter %s with new values for %s criteria field" % (df_name, df_criterion))
         
     else:
         # This should never happen, but just in case, provide details to look into
@@ -177,7 +180,3 @@ def update_dynamic_filter(host_ip, port, username, password, df_name, df_criteri
                 print (" %s," % (df_details['default_name'])),
         print("")
         return
-
-    
-    
-

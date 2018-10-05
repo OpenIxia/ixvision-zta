@@ -157,19 +157,9 @@ if args.subparser_name in ztp_actions_choices:
                 print ("Error: criteria file is requied for dynamic filter mode %s" % (df_mode))
                 sys.exit(2)
             else:
-                parse_failed = False
-                try:
-                    with open(criteria_file) as f:
-                        try:
-                            df_criteria = json.load(f)
-                            print("Filter criteria has been loaded from %s" % criteria_file)
-                        except:
-                            print("Error: can't parse filter criteria from %s" % criteria_file)
-                            parse_failed = True
-                            sys.exit(2)
-                except:
-                    if not parse_failed:
-                        print("Error: can't read filter criteria from %s" % criteria_file)
+                df_criteria = load_json_from_file(criteria_file)
+                if df_criteria == None:
+                    print("Error: can't parse filter criteria from %s" % criteria_file)
                     sys.exit(2)
                     
         form_dynamic_filter(host, port, username, password, df_name, df_input, df_output, df_mode, df_criteria, tag_mode)
