@@ -6,6 +6,7 @@ from ixia_nto import *
 # DEFINE VARs HERE
 port_modes_supported = {'net': 'NETWORK', 'tool': 'TOOL'}
 df_connection_modes_supported = {'input': 'NETWORK', 'output': 'TOOL'}
+df_criteria_fields_supported = {'ip': 'ipv4_src_or_dst', 'ip-src': 'ipv4_src', 'ip-dst': 'ipv4_dst'}
 
 # DEFINE FUNCTIONS HERE
 
