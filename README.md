@@ -1,9 +1,9 @@
 # IxVision-ZTA - Zero-Touch Automation Utility for Ixia Vision Network Packet Brokers
 ## Overview
-IxVision-ZTA is a command-line utility that helps you to apply a set of configuration steps, or actions, to an Ixia Vision Network Packet Broker (NPB). It is also capable of running discovery operations - identifying connected NPB ports, setting up proper speed and duplex parameters, using LLDP neighbor information to identify a role of a port. Each time you run `ixvztp`, you choose one of the actions from the following list:
+IxVision-ZTA is a command-line utility that helps you to apply a set of configuration steps, or actions, to an Ixia Vision Network Packet Broker (NPB). It is also capable of running discovery operations - identifying connected NPB ports, setting up proper speed and duplex parameters, parce LLDP neighbor information to identify a role of a port. When running `ixvztp`, you choose one of the actions from the following list:
 
 * `sysinfo`  Display system information
-* `portup`   Performs link status discovery for all currently disabled ports. Successfully connected ports would be configured in Network (ingress) mode.
+* `portup`   Perform link status discovery for all currently disabled ports. Successfully connected ports would be configured in Network (ingress) mode.
 * `lldptag`  Search for LLDP neighbor port descriptions that match one or more supplied tags. Tag the ports, connected to the matched neighbors, with corresponding keywords.
 * `portmode` Set port mode to the specified value for ports that match one or more supplied tags.
 * `pgform`   Form a group of ports that have keywords matching supplied tags. Both Network and Tool Port Groups are supported.
@@ -68,26 +68,26 @@ Remember to use proper credentials
     DEVICE_IP=<ip_address_of_ixia_npb>
 
 
-Performing port/link status discovery
+Perform port/link status discovery
 
     ixvztp -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP portup
 
 
-Using LLDP neighbor information to look for TAP, SPAN or probe keywords in LLDP port descriptions and tag NPB ports with corresponding keywords. Since it takes time for LLDP neighbor database to populate, you might need to give it some time before running `lldptag` action.
+Use LLDP neighbor information to look for TAP, SPAN or probe keywords in LLDP port descriptions and tag NPB ports with corresponding keywords. Since it takes time for LLDP neighbor database to populate, you might need to give it some time before running `lldptag` action.
 
     ixvztp -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP lldptag -t TAP,SPAN,probe
 
-Create/update port groups based on keywords from the previous steps. Network side - TAP ports as _**TAPs**_ port group, SPAN ports as _**SPANs**_ port group.
+Create/update port groups based on keywords from the previous step. Network side - TAP ports as _**TAPs**_ port group, SPAN ports as _**SPANs**_ port group.
 
     ixvztp -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP pgform -t tap -n TAPs -m net
     ixvztp -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP pgform -t span -n SPANs -m net
 
-Tool side - probe ports as _**PROBES**_ LBG
+Tool side - probe ports as _**PROBES**_ load-balancing group.
 
     ixvztp -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP pgform -t probe -n PROBES -m lb
 
 
-Finally, connecting input and output ports together by creating filters. Create _**AllTraffic**_ filter for traffic from _**TAPs**_ and _**SPANs**_ to _**PROBES**_ port group.
+Finally, connecting inputs to outputs by creating filters. Create _**AllTraffic**_ filter for traffic from _**TAPs**_ and _**SPANs**_ to _**PROBES**_ port group.
 
     ixvztp -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP dfform -n "AllTraffic" -i TAPs -o PROBES -m all
     ixvztp -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP dfform -n "AllTraffic" -i SPANs -o PROBES -m all
