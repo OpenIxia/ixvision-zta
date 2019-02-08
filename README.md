@@ -1,60 +1,94 @@
-# Zero-Touch Provisioning for Ixia Vision NPBs
-Example of post-discovery initialization script.
-Environment vars required:
-~~~~
-DEVICE_IP - IP address of a Vision NPB
-WEB_API_USERNAME - username to use for REST API
-WEB_API_PASSWORD - password to use for REST API
-LLDP_DELAY - delay in seconds to wait before starting LLDP discovery
-~~~~
+# IxVision-ZTA - Zero-Touch Automation Utility for Ixia Vision Network Packet Brokers
+## Overview
+IxVision-ZTA is a command-line utility that helps you to apply a set of configuration steps, or actions, to an Ixia Vision Network Packet Broker (NPB). It is also capable of running discovery operations - identifying connected NPB ports, setting up proper speed and duplex parameters, using LLDP neighbor information to identify a role of a port. Each time you run `ixvztp`, you choose one of the actions from the following list:
 
-~~~~
-echo "Discovered a $DEVICE_TYPE device with a management IP address $DEVICE_IP - initializing ZTP"
+* `sysinfo`  Display system information
+* `portup`   Performs link status discovery for all currently disabled ports. Successfully connected ports would be configured in Network (ingress) mode.
+* `lldptag`  Search for LLDP neighbor port descriptions that match one or more supplied tags. Tag the ports, connected to the matched neighbors, with corresponding keywords.
+* `portmode` Set port mode to the specified value for ports that match one or more supplied tags.
+* `pgform`   Form a group of ports that have keywords matching supplied tags. Both Network and Tool Port Groups are supported.
+* `dfform`   Form a dynamic filter with specified input, output and filtering mode.
+* `dfupdate` Update a dynamic filter with new criteria
 
-# Initialize python environment
-export PYENV=ixvision
-cd $PYENV; export PYENV_DIR=`pwd`
-. "$PYENV_DIR/bin/activate"
+By sequencially combining several `ixvztp` invocations, each time with a needed action, one can create a script descriping a complex configuration policy to be applied to a target NPB. 
 
-# Launch ZTP - port inventory
-"$PYENV_DIR/ixvision-ztp/ixvztp.py" -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP portup
+## Installation
+Prerequisites:
 
-# Hold on for LLDP to kick in
-echo "Pausing for $LLDP_DELAY seconds for LLDP neighbors to be learned"
-sleep $LLDP_DELAY
+* OpenSSL library with TLS1.2 support
+* Python 2.7
+* PIP
+* virtualenv - optional, used in the examples here
 
-# Launch LLDP port discovery - look for TAP,SPAN,monitor keywords in LLDP port descriptions
-echo "Run port discovery via LLDP for the following keywords: TAP,SPAN,monitor"
-"$PYENV_DIR/ixvision-ztp/ixvztp.py" -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP lldptag -t TAP,SPAN,bro-monitor,moloch-capture
+Create virtual environment called `ixvision` in a directory of your choice:
 
-# Create/update port groups based on discovered port tags
+    export PYENV=ixvision
+    virtualenv -p python2.7 $PYENV; cd $PYENV; export PYENV_DIR=`pwd`
+    source "$PYENV_DIR/bin/activate"
 
-# Network side - TAP and SPAN ports as TAPs IPG
-echo "Create/update network port group TAPs with ports tagged as TAP"
-"$PYENV_DIR/ixvision-ztp/ixvztp.py" -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP pgform -t tap -n TAPs -m net
-echo "Create/update network port group SPANs with ports tagged as SPAN"
-"$PYENV_DIR/ixvision-ztp/ixvztp.py" -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP pgform -t span -n SPANs -m net
+Download VisionNPB library from GitHub:
 
-# Tool side - monitor ports as BRO LBG
-echo "Create/update load-balance tool port group BRO with ports tagged as monitor"
-"$PYENV_DIR/ixvision-ztp/ixvztp.py" -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP pgform -t bro-monitor -n BRO -m lb
+    cd "$PYENV_DIR"; git clone https://github.com/OpenIxia/VisionNPB.git
 
-echo "Create/update load-balance tool port group MOLOCH with ports tagged as capture"
-"$PYENV_DIR/ixvision-ztp/ixvztp.py" -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP pgform -t moloch-capture -n MOLOCH -m lb
+Download pre-requisite packages: *TODO replace with using requirements.txt*
+
+    pip install urllib3
 
 
-# TODO Enable LLDP TX from Tool ports
+Test by exporting a config from an NPB, using default credentials (you might need to change those):
 
-# Create filters
-echo "Create IoC_Detection filter for traffic from TAPs"
-"$PYENV_DIR/ixvision-ztp/ixvztp.py" -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP dfform -n "IoC_Detection" -i TAPs -o BRO -m all
-echo "Connect IoC_Detection filter to SPANs as well"
-"$PYENV_DIR/ixvision-ztp/ixvztp.py" -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP dfform -n "IoC_Detection" -i SPANs -o BRO  -m all
+    WEB_API_USERNAME=admin
+    WEB_API_PASSWORD=admin
+    DEVICE_IP=<ip_address_of_ixia_npb>
 
-echo "Create IPv4_Capture filter for traffic from TAPs"
-"$PYENV_DIR/ixvision-ztp/ixvztp.py" -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP dfform -n "Traffic_Capture" -i TAPs -o MOLOCH -m pbc -c moloch-ipv4.json
-echo "Connect IPv4_Capture filter to SPANs as well"
-"$PYENV_DIR/ixvision-ztp/ixvztp.py" -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP dfform -n "Traffic_Capture" -i SPANs -o MOLOCH -m pbc -c moloch-ipv4.json
+    "$PYENV_DIR/VisionNPB/RestApi/Python/exportConfig.py" -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -h $DEVICE_IP
 
-~~~~
+Clone IxVision-ZTA repository
+
+    git clone git@github.com:bortok/ixvision-ztp.git
+
+Test by inquering system information
+
+    "$PYENV_DIR/ixvision-ztp/ixvztp" -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP sysinfo
+
+
+## Usage
+
+Initialize python environment (you might need to adopt this to your setup, depending on the directory tree structure)
+
+    export PYENV=ixvision
+    cd $PYENV; export PYENV_DIR=`pwd`
+    . "$PYENV_DIR/bin/activate"
+    PATH="$PYENV_DIR/ixvision-ztp",$PATH
+
+Remember to use proper credentials
+
+    WEB_API_USERNAME=admin
+    WEB_API_PASSWORD=admin
+    DEVICE_IP=<ip_address_of_ixia_npb>
+
+
+Performing port/link status discovery
+
+    ixvztp -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP portup
+
+
+Using LLDP neighbor information to look for TAP, SPAN or probe keywords in LLDP port descriptions and tag NPB ports with corresponding keywords. Since it takes time for LLDP neighbor database to populate, you might need to give it some time before running `lldptag` action.
+
+    ixvztp -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP lldptag -t TAP,SPAN,probe
+
+Create/update port groups based on keywords from the previous steps. Network side - TAP ports as _**TAPs**_ port group, SPAN ports as _**SPANs**_ port group.
+
+    ixvztp -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP pgform -t tap -n TAPs -m net
+    ixvztp -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP pgform -t span -n SPANs -m net
+
+Tool side - probe ports as _**PROBES**_ LBG
+
+    ixvztp -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP pgform -t probe -n PROBES -m lb
+
+
+Finally, connecting input and output ports together by creating filters. Create _**AllTraffic**_ filter for traffic from _**TAPs**_ and _**SPANs**_ to _**PROBES**_ port group.
+
+    ixvztp -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP dfform -n "AllTraffic" -i TAPs -o PROBES -m all
+    ixvztp -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP dfform -n "AllTraffic" -i SPANs -o PROBES -m all
 
