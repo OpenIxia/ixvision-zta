@@ -1,12 +1,24 @@
-# Zero-Touch Provisioning script (playbook) for a Ixia Vision NPB
-# Form a port group based on keywords the ports are tagged with
-
+###############################################################################
+#
+# Zero-Touch Automation utility for Ixia Vision Network Packet Brokers
+#
+# File: ixvision_ztp_port_group.py
+# Author: Alex Bortok (https://github.com/bortok)
+#
+# Description: Form a port group based on keywords the ports are tagged with
 # 1. Starting point is an Ixia Vision NPB with ports tagged by certain keywords that indicate what is connected to them
 # 2. Each run of this script would configure a single port group using the supplied name and group type:
 #  - Search for an existing port group with the same name. If found with the matching type, continue by referencing that group. If the type doesn't match, stop. 
 #  - If not found, create a new group
 # 4. Search for enabled ports with matching keywords that are not yet members of any group and don't have any connections to/from them. Add all such ports to the group, change port mode if nessesary
 # 5. For all exising port group members, check keywords and if any have no match, remove them from the port group and set to a default configuration (Network Port, no connections)
+#
+# COPYRIGHT 2018 - 2019 Keysight Technologies.
+#
+# This code is provided under the MIT license.  
+# You can find the complete terms in LICENSE.txt
+#
+###############################################################################
 
 from ixia_nto import *
 

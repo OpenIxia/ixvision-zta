@@ -1,44 +1,24 @@
-# Zero-Touch Provisioning script (playbook) for a Ixia Vision NPB
-# Perform initial NPB configuration, run through port discovery.
-# End goal is to have a managable system with LLDP neighbours being observed for further ZTP configuration steps
-
-# 1. Check and upgrade s/w version [SKIP]
-# 2. Configure basic system parameters (login banner for example) [maybe as a test]
-# 3. Install a license [SKIP]
-# 4. Perform port discovery - cycle through all supported port speeds to brning all possible links up [FOCUS]
-# 5. Disable all the ports that stayed down, tag the ports that came up as configured by ZTP
+###############################################################################
+#
+# Zero-Touch Automation utility for Ixia Vision Network Packet Brokers
+#
+# File: ixvision_ztp_port_discovery.py
+# Author: Alex Bortok (https://github.com/bortok)
+#
+# Description: Perform initial NPB port discovery.
+# End goal is to have a system with LLDP neighbours being observed for further ZTP configuration steps
+# 1. Perform port discovery - cycle through all supported port speeds to brning all possible links up
+# 2. Disable all the ports that stayed down, tag the ports that came up as configured by ZTP
+#
+# COPYRIGHT 2018 - 2019 Keysight Technologies.
+#
+# This code is provided under the MIT license.  
+# You can find the complete terms in LICENSE.txt
+#
+###############################################################################
 
 from ixia_nto import *
 
-# DEFINE FUNCTIONS HERE
-
-# Input 
-# - Connection to an NPB
-# - NPB type (can be determined)
-# - Supported port speeds per model (for now, we can assume 1 and 10G only)
-# - ZTP scope (how many ports, for example) - we need this for granular control, instead of going through all available ports
-
-# Model to operate
-# NPB
-# |_Connection
-# |_Type
-# |_PortCapabilities[PortList[PortNum,SpeedList]]
-# |_ZTPScope[PortList]
-# |_DiscoveredPortList[PortNum,Enabled,Type,Speed,Status,Keywords,ZTPSucceeded]
-
-# Validate the NPB type againts a list of supported models [Exit if not supported]
-# Pull port capabilities list for the NPB type [Exit if not exists]
-# Pull ZTP scope [Assume all in scope if not exists]
-# Overlay port capabilities with ZTP scope - initialize DiscoveredPortList with default values
-# All actions from here happen only within ZTP scope
-
-# TODO Disconnect all the filters from the ports in scope
-# Enable all disabled ports as 10G, NP - collect status
-# Reconfigure ports that are down as 1G - collect status
-# Disable all disconnected ports, set them as network, 10G
-
-# Quiery NPB for port configs and status
-# Use optional keyword to limit the inventory scope to ports tagged by matching keyword
 def discover_ports(host_ip, port, username, password, keyword=''):
 
     nto = NtoApiClient(host=host_ip, username=username, password=password, port=port, debug=True, logFile="ixvision_ztp_debug.log")

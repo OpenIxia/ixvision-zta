@@ -1,6 +1,11 @@
-# Zero-Touch Provisioning script (playbook) for a Ixia Vision NPB
-# Create/update a dynamic filter between network and tool port groups 
-
+###############################################################################
+#
+# Zero-Touch Automation utility for Ixia Vision Network Packet Brokers
+#
+# File: ixvision_ztp_filter.py
+# Author: Alex Bortok (https://github.com/bortok)
+#
+# Description: A module to create/update a dynamic filter between network and tool port groups 
 # 1. Starting point is an Ixia Vision NPB with network and tool port groups formed
 # 2. Each run of this script would configure a single dynamic filter using supplied name and filter criteria
 #  - Search for an existing DF with the same name. If found with the matching type, continue by referencing that DF
@@ -8,6 +13,13 @@
 # 3. Update the DF criteria with provided rules
 # 4. Search for network port group with a specified name and, if found, connect it to the input of the DF
 # 5. Search for tool port group with a specified name and, if found, connect it to the output of the DF
+#
+# COPYRIGHT 2018 - 2019 Keysight Technologies.
+#
+# This code is provided under the MIT license.  
+# You can find the complete terms in LICENSE.txt
+#
+###############################################################################
 
 from ixia_nto import *
 

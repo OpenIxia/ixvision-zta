@@ -1,5 +1,18 @@
-# Zero-Touch Provisioning script (playbook) for a Ixia Vision NPB
-# Common ZTP library of methods for interacting with NTO
+###############################################################################
+#
+# Zero-Touch Automation utility for Ixia Vision Network Packet Brokers
+#
+# File: ixvision_ztp_ntolib.py
+# Author: Alex Bortok (https://github.com/bortok)
+#
+# Description: Common library of methods for interacting with Vision NPBs
+#
+# COPYRIGHT 2018 - 2019 Keysight Technologies.
+#
+# This code is provided under the MIT license.  
+# You can find the complete terms in LICENSE.txt
+#
+###############################################################################
 
 from ixia_nto import *
 
