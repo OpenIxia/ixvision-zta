@@ -28,7 +28,7 @@ Create virtual environment called `ixvision` in a directory of your choice:
 
 Download VisionNPB library from GitHub:
 
-    cd "$PYENV_DIR"; git clone https://github.com/OpenIxia/VisionNPB.git
+    cd "$PYENV_DIR"; git clone https://github.com/bortok/VisionNPB.git
 
 Clone IxVision-ZTA repository
 
