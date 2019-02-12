@@ -1,5 +1,18 @@
-# Zero-Touch Provisioning script (playbook) for a Ixia Vision NPB
-# Set port mode for ports with matching tags
+###############################################################################
+#
+# Zero-Touch Automation utility for Ixia Vision Network Packet Brokers
+#
+# File: ixvision_ztp_port_mode.py
+# Author: Alex Bortok (https://github.com/bortok)
+#
+# Description: A module to set port mode for ports with matching tags
+#
+# COPYRIGHT 2018 - 2019 Keysight Technologies.
+#
+# This code is provided under the MIT license.  
+# You can find the complete terms in LICENSE.txt
+#
+###############################################################################
 
 from ixia_nto import *
 

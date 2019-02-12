@@ -1,5 +1,19 @@
-# Zero-Touch Provisioning script (playbook) for a Ixia Vision NPB
-# Inquiry system status
+###############################################################################
+#
+# Zero-Touch Automation utility for Ixia Vision Network Packet Brokers
+#
+# File: ixvision_ztp_sysinfo.py
+# Author: Alex Bortok (https://github.com/bortok)
+#
+# Description: A module to inquiry system status
+#
+# COPYRIGHT 2018 - 2019 Keysight Technologies.
+#
+# This code is provided under the MIT license.  
+# You can find the complete terms in LICENSE.txt
+#
+###############################################################################
+
 
 from ixia_nto import *
 
