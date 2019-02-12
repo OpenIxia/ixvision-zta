@@ -32,11 +32,11 @@ Download VisionNPB library from GitHub:
 
 Clone IxVision-ZTA repository
 
-    git clone git@github.com:bortok/ixvision-ztp.git
+    git clone git@github.com:bortok/ixvision-zta.git
 
 Download pre-requisite packages:
 
-    pip install -r ixvision-ztp/requirements.txt
+    pip install -r ixvision-zta/requirements.txt
 
 Test by exporting a config from an NPB, using default credentials (you might need to change those):
 
@@ -48,7 +48,7 @@ Test by exporting a config from an NPB, using default credentials (you might nee
 
 Test by inquering system information
 
-    "$PYENV_DIR/ixvision-ztp/ixvztp" -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP sysinfo
+    "$PYENV_DIR/ixvision-zta/ixvztp" -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP sysinfo
 
 
 ## Usage
@@ -58,7 +58,7 @@ Initialize python environment (you might need to adopt this to your setup, depen
     export PYENV=ixvision
     cd $PYENV; export PYENV_DIR=`pwd`
     . "$PYENV_DIR/bin/activate"
-    PATH="$PYENV_DIR/ixvision-ztp":$PATH
+    PATH="$PYENV_DIR/ixvision-zta":$PATH
 
 Remember to use proper credentials
 
