@@ -1,6 +1,21 @@
 #!/usr/bin/env python
+
+###############################################################################
 #
-# Zero-Touch Provisioning script for Ixia Vision Network Packet Brokers
+# Zero-Touch Automation utility for Ixia Vision Network Packet Brokers
+#
+# File: ixvztp
+# Author: Alex Bortok (https://github.com/bortok)
+#
+# Description: Main launcher script for IxVision-ZTA utility
+#
+# COPYRIGHT 2018 - 2019 Keysight Technologies.
+#
+# This code is provided under the MIT license.  
+# You can find the complete terms in LICENSE.txt
+#
+###############################################################################
+
 
 import sys
 import argparse
