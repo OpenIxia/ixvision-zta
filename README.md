@@ -91,3 +91,11 @@ Finally, connecting inputs to outputs by creating filters. Create _**AllTraffic*
     ixvztp -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP dfform -n "AllTraffic" -i TAPs -o PROBES -m all
     ixvztp -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP dfform -n "AllTraffic" -i SPANs -o PROBES -m all
 
+# Copyright notice
+
+Author: Alex Bortok (https://github.com/bortok)
+
+COPYRIGHT 2018 - 2019 Keysight Technologies.
+
+This code is provided under the MIT license.  
+You can find the complete terms in LICENSE.txt
