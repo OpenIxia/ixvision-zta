@@ -41,19 +41,29 @@ pg_modes_supported = {'net': 'INTERCONNECT', 'lb': 'LOAD_BALANCE'}
 # |_Keywords[Names]
 
 def form_port_groups(host_ip, port, username, password, tags, pg_name, pg_mode_key):
-    if pg_mode_key == 'lb' or pg_mode_key == 'LB':
-        pg_params = {'mode': 'TOOL', 'port_group_type': 'LOAD_BALANCE'}
-    else:   # Inside this function we will default to Network Port Group mode
-        pg_params = {'mode': 'NETWORK', 'port_group_type': 'INTERCONNECT'}
-        
     nto = NtoApiClient(host=host_ip, username=username, password=password, port=port, debug=True, logFile="ixvision_ztp_port_group_debug.log")
+    
+    # Check s/w version to use proper API syntax (ixia_nto.py doesn't support API versioning)
+    nto_system_properties = nto.getSystem()
+    nto_major_version = int(nto_system_properties['software_version'][0])
+    
+    if nto_major_version == 4:
+        pg_type_key = 'port_group_type'
+    else:
+        pg_type_key = 'type'
+
+    if pg_mode_key == 'lb' or pg_mode_key == 'LB':
+        pg_params = {'mode': 'TOOL', pg_type_key: 'LOAD_BALANCE'}
+    else:   # Inside this function we will default to Network Port Group mode
+        pg_params = {'mode': 'NETWORK', pg_type_key: 'INTERCONNECT'}
+        
 
     port_group_list = nto.searchPortGroups({'name': pg_name})
     ztp_port_group = None
     ztp_port_group_port_list = []
     if len(port_group_list) == 0:
         # No existing group with such name, create new one
-        pg_params.update({'name': pg_name, 'keywords': ['_ZTP_LLDP'] + tags})
+        pg_params.update({'name': pg_name, 'keywords': ['ZTP'] + tags})
         new_port_group = nto.createPortGroup(pg_params)
         if new_port_group is not None and len(new_port_group) > 0:
             print("No group found, created a new one with id %s" % (str(new_port_group['id'])))
@@ -66,9 +76,9 @@ def form_port_groups(host_ip, port, username, password, tags, pg_name, pg_mode_k
         port_group = port_group_list[0]
         port_group_details = nto.getPortGroup(str(port_group['id']))
         if port_group_details is not None:
-            # WARNING! NTO API returns 'type' attribute instead of 'port_group_type'
+            # WARNING! All NTO API versions returns 'type' attribute key on GET, but not on CREATE/UPDATE
             print("Found existing port group %s of %s type and %s mode" % (port_group_details['default_name'], port_group_details['type'], port_group_details['mode'])),
-            if port_group_details['type'] == pg_params['port_group_type'] and port_group_details['mode'] == pg_params['mode']:
+            if port_group_details['type'] == pg_params[pg_type_key] and port_group_details['mode'] == pg_params['mode']:
                 # PG types match, will update the existing group
                 print("-- type and mode match, will update")
                 ztp_port_group = port_group
@@ -83,7 +93,8 @@ def form_port_groups(host_ip, port, username, password, tags, pg_name, pg_mode_k
                     nto.modifyPortGroup(str(port_group['id']),{'keywords': updated_keywords})
             else:
                 # Mismatch, return
-                print("-- type or mode mismatch with requested %s, %s, skipping..." % (pg_params['port_group_type'], pg_params['mode']))
+                print("-- type or mode mismatch with requested %s, %s, skipping..." % (pg_params[pg_type_key], pg_params['mode']))
+                return
         else:
             print("Failed to retrieve details for port %s, skipping..." % (port_group['name']))
     else:
