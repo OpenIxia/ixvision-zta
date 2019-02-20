@@ -63,7 +63,7 @@ def form_port_groups(host_ip, port, username, password, tags, pg_name, pg_mode_k
     ztp_port_group_port_list = []
     if len(port_group_list) == 0:
         # No existing group with such name, create new one
-        pg_params.update({'name': pg_name, 'keywords': ['_ZTP_LLDP'] + tags})
+        pg_params.update({'name': pg_name, 'keywords': ['ZTP'] + tags})
         new_port_group = nto.createPortGroup(pg_params)
         if new_port_group is not None and len(new_port_group) > 0:
             print("No group found, created a new one with id %s" % (str(new_port_group['id'])))
