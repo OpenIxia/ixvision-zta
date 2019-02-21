@@ -14,7 +14,7 @@
 #
 ###############################################################################
 
-from ixia_nto import *
+from ksvisionlib import *
 
 # DEFINE VARs HERE
 port_modes_supported = {'net': 'NETWORK', 'tool': 'TOOL'}

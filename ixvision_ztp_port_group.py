@@ -20,7 +20,7 @@
 #
 ###############################################################################
 
-from ixia_nto import *
+from ksvisionlib import *
 
 # DEFINE VARs HERE
 pg_modes_supported = {'net': 'INTERCONNECT', 'lb': 'LOAD_BALANCE'}
@@ -41,7 +41,7 @@ pg_modes_supported = {'net': 'INTERCONNECT', 'lb': 'LOAD_BALANCE'}
 # |_Keywords[Names]
 
 def form_port_groups(host_ip, port, username, password, tags, pg_name, pg_mode_key):
-    nto = NtoApiClient(host=host_ip, username=username, password=password, port=port, debug=True, logFile="ixvision_ztp_port_group_debug.log")
+    nto = VisionWebApi(host=host_ip, username=username, password=password, port=port, debug=True, logFile="ixvision_ztp_port_group_debug.log")
     
     # Check s/w version to use proper API syntax (ixia_nto.py doesn't support API versioning)
     nto_system_properties = nto.getSystem()

@@ -26,9 +26,9 @@ Create virtual environment called `ixvision` in a directory of your choice:
     virtualenv -p python2.7 $PYENV; cd $PYENV; export PYENV_DIR=`pwd`
     source "$PYENV_DIR/bin/activate"
 
-Download VisionNPB library from GitHub (currently, IxVision-ZTA relies on 2018 version of VisionNPB library, which is available via a fork referenced below):
+Download VisionNPB library from GitHub:
 
-    cd "$PYENV_DIR"; git clone https://github.com/bortok/VisionNPB.git
+    cd "$PYENV_DIR"; git clone https://github.com/OpenIxia/VisionNPB.git
 
 Clone IxVision-ZTA repository
 
