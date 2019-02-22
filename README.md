@@ -1,6 +1,6 @@
 # IxVision-ZTA - Zero-Touch Automation Utility for Ixia Vision Network Packet Brokers
 ## Overview
-IxVision-ZTA is a command-line utility that helps you to apply a set of configuration steps, or actions, to an Ixia Vision Network Packet Broker (NPB). It is also capable of running discovery operations - identifying connected NPB ports, setting up proper speed and duplex parameters, parce LLDP neighbor information to identify a role of a port. When running `ixvztp`, you choose one of the actions from the following list:
+IxVision-ZTA is a command-line utility that helps you to apply a set of configuration steps, or actions, to an Ixia Vision Network Packet Broker (NPB). It is also capable of running discovery operations - identifying connected NPB ports, setting up proper speed and duplex parameters, parse LLDP neighbor information to identify a role of a port. When running `ixvztp`, you choose one of the actions from the following list:
 
 * `sysinfo`  Display system information
 * `portup`   Perform link status discovery for all currently disabled ports. Successfully connected ports would be configured in Network (ingress) mode.
@@ -10,7 +10,7 @@ IxVision-ZTA is a command-line utility that helps you to apply a set of configur
 * `dfform`   Form a dynamic filter with specified input, output and filtering mode.
 * `dfupdate` Update a dynamic filter with new criteria
 
-By sequencially combining several `ixvztp` invocations, each time with a needed action, one can create a script descriping a complex configuration policy to be applied to a target NPB. 
+By sequencially combining several `ixvztp` invocations, each time with a needed action, one can create a script describing a complex configuration policy to be applied to a target NPB. 
 
 ## Installation
 Prerequisites:
@@ -34,7 +34,7 @@ Clone IxVision-ZTA repository
 
     git clone https://github.com/OpenIxia/ixvision-zta.git
 
-Download pre-requisite packages:
+Install pre-requisite packages:
 
     pip install -r ixvision-zta/requirements.txt
 
@@ -53,7 +53,7 @@ Test by inquering system information
 
 ## Usage
 
-Initialize python environment (you might need to adopt this to your setup, depending on the directory tree structure)
+Initialize python environment (you might need to adapt this to your setup, depending on the directory tree structure)
 
     export PYENV=ixvision
     cd $PYENV; export PYENV_DIR=`pwd`
@@ -67,16 +67,16 @@ Remember to use proper credentials
     DEVICE_IP=<ip_address_of_ixia_npb>
 
 
-Perform port/link status discovery
+Perform port/link discovery
 
     ixvztp -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP portup
 
 
-Use LLDP neighbor information to look for TAP, SPAN or probe keywords in LLDP port descriptions and tag NPB ports with corresponding keywords. Since it takes time for LLDP neighbor database to populate, you might need to give it some time before running `lldptag` action.
+Use LLDP neighbor information to look for `TAP`, `SPAN` or `probe` keywords in LLDP port descriptions and tag NPB ports with corresponding keywords. Since it takes time for LLDP neighbor database to populate, you might need to give it some time before running `lldptag` action.
 
     ixvztp -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP lldptag -t TAP,SPAN,probe
 
-Create/update port groups based on keywords from the previous step. Network side - TAP ports as _**TAPs**_ port group, SPAN ports as _**SPANs**_ port group.
+Create/update port groups based on keywords from the previous step. Network side - combine TAP ports as _**TAPs**_ port group, and SPAN ports as _**SPANs**_ port group.
 
     ixvztp -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP pgform -t tap -n TAPs -m net
     ixvztp -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP pgform -t span -n SPANs -m net
@@ -86,7 +86,7 @@ Tool side - probe ports as _**PROBES**_ load-balancing group.
     ixvztp -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP pgform -t probe -n PROBES -m lb
 
 
-Finally, connecting inputs to outputs by creating filters. Create _**AllTraffic**_ filter for traffic from _**TAPs**_ and _**SPANs**_ to _**PROBES**_ port group.
+Finally, connect inputs to outputs by creating filters. Use _**AllTraffic**_ filter to direct traffic from _**TAPs**_ and _**SPANs**_ input port groups to _**PROBES**_ port group.
 
     ixvztp -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP dfform -n "AllTraffic" -i TAPs -o PROBES -m all
     ixvztp -u $WEB_API_USERNAME -p $WEB_API_PASSWORD -d $DEVICE_IP dfform -n "AllTraffic" -i SPANs -o PROBES -m all
