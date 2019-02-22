@@ -21,7 +21,7 @@
 ###############################################################################
 
 
-from ixia_nto import *
+from ksvisionlib import *
 
 # DEFINE FUNCTIONS HERE
 
@@ -42,7 +42,7 @@ from ixia_nto import *
 
 def tag_ports(host_ip, port, username, password, tags):
 
-    nto = NtoApiClient(host=host_ip, username=username, password=password, port=port, debug=True, logFile="ixvision_lldp_tag_debug.log")
+    nto = VisionWebApi(host=host_ip, username=username, password=password, port=port, debug=True, logFile="ixvision_lldp_tag_debug.log")
 
     neighbor_list = {}
 

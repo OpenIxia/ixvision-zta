@@ -17,11 +17,11 @@
 #
 ###############################################################################
 
-from ixia_nto import *
+from ksvisionlib import *
 
 def discover_ports(host_ip, port, username, password, keyword=''):
 
-    nto = NtoApiClient(host=host_ip, username=username, password=password, port=port, debug=True, logFile="ixvision_ztp_debug.log")
+    nto = VisionWebApi(host=host_ip, username=username, password=password, port=port, debug=True, logFile="ixvision_ztp_debug.log")
 
     discoveredPortList = {}
 

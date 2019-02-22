@@ -14,7 +14,7 @@
 #
 ###############################################################################
 
-from ixia_nto import *
+from ksvisionlib import *
 
 from ixvision_ztp_ntolib import *
 
@@ -29,7 +29,7 @@ from ixvision_ztp_ntolib import *
 
 def set_port_mode(host_ip, port, username, password, tags, mode):
 
-    nto = NtoApiClient(host=host_ip, username=username, password=password, port=port, debug=True, logFile="ixvision_ztp_port_mode_debug.log")
+    nto = VisionWebApi(host=host_ip, username=username, password=password, port=port, debug=True, logFile="ixvision_ztp_port_mode_debug.log")
 
     # Search for ports to be updated - can't be a part of a port group, can't have any existing connections
     port_list = nto.searchPorts({'enabled': True, 'port_group_id': None, 'dest_filter_list': [], 'source_filter_list': []})

@@ -15,7 +15,7 @@
 ###############################################################################
 
 
-from ixia_nto import *
+from ksvisionlib import *
 
 # DEFINE FUNCTIONS HERE
 
@@ -43,7 +43,7 @@ def nto_get_sysinfo(host_ip, port, username, password):
         'serial_num': 'Serial number:'
     }
 
-    nto = NtoApiClient(host=host_ip, username=username, password=password, port=port, debug=False, logFile="ixvision_status_debug.log")
+    nto = VisionWebApi(host=host_ip, username=username, password=password, port=port, debug=False, logFile="ixvision_status_debug.log")
 
     nto_system_properties = nto.getSystem()
     nto_system_info = nto_system_properties['system_info']

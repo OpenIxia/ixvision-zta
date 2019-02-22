@@ -21,7 +21,7 @@
 #
 ###############################################################################
 
-from ixia_nto import *
+from ksvisionlib import *
 
 from ixvision_ztp_ntolib import *
 
@@ -73,7 +73,7 @@ def form_dynamic_filter(host_ip, port, username, password, df_name, df_input, df
         print("Non-empty criteria are required for filter mode %s" % (df_mode))
         return
                 
-    nto = NtoApiClient(host=host_ip, username=username, password=password, port=port, debug=True, logFile="ixvision_ztp_filter_debug.log")
+    nto = VisionWebApi(host=host_ip, username=username, password=password, port=port, debug=True, logFile="ixvision_ztp_filter_debug.log")
 
     # Search for existing DF, create a new one if not found
     df_list = nto.searchFilters({'name': df_name})
@@ -151,7 +151,7 @@ def update_dynamic_filter(host_ip, port, username, password, df_name, df_criteri
         print("Error: unsupported filter criteria %s" % df_criteria_field)
         return
         
-    nto = NtoApiClient(host=host_ip, username=username, password=password, port=port, debug=True, logFile="ixvision_ztp_filter_debug.log")
+    nto = VisionWebApi(host=host_ip, username=username, password=password, port=port, debug=True, logFile="ixvision_ztp_filter_debug.log")
 
     # Search for the DF
     df_list = nto.searchFilters({'name': df_name})
