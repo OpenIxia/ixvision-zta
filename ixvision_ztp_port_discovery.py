@@ -90,7 +90,8 @@ def discover_ports(host_ip, port, username, password, keyword=''):
     for port_id in discoveredPortList:
         port = discoveredPortList[port_id]
         portDetails = port['details']
-        if not portDetails['link_status']['link_up'] and portDetails['enabled'] and portDetails['media_type'] == 'SFP_PLUS_10G':
+        if not portDetails['link_status']['link_up'] and portDetails['enabled'] and portDetails['media_type'] == 'SFP_PLUS_10G' \
+            and portDetails['misc']['board_type'] != "EPIPHONE_100_MAIN": # 1G is not supported on E100
             nto.modifyPort(str(port_id), {'media_type': 'SFP_1G','link_settings': 'AUTO','mode': 'NETWORK'})
             print("Converted port %s:%s to 1G/Auto, NETWORK" % (host_ip, port['details']['default_name']))
         
@@ -125,8 +126,8 @@ def discover_ports(host_ip, port, username, password, keyword=''):
             else:
                 print("Port %s:%s doesn't have LLDP RX capabilities" % (host_ip, port['details']['default_name']))
         else:
-            nto.modifyPort(str(port_id), {'enabled': False, 'media_type': 'SFP_PLUS_10G', 'link_settings': '10G_FULL', 'mode': 'NETWORK'})
-            print("Converted port %s:%s to 10G, NETWORK and DISABLED" % (host_ip, port['details']['default_name']))
+            nto.modifyPort(str(port_id), {'enabled': False, 'mode': 'NETWORK'})
+            print("Converted port %s:%s to NETWORK and DISABLED" % (host_ip, port['details']['default_name']))
 
 
 
