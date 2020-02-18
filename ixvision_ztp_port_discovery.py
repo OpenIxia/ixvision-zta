@@ -90,6 +90,51 @@ def discover_ports(host_ip, port, username, password, keyword=''):
         # Update the list with the latest config and status
         discoveredPortList[port_id]['details'] = ntoPortDetails
 
+    # Stay on 100G, try FEC OFF for ports that didn't come up
+    media_type = 'QSFP28'
+    for port_id in discoveredPortList:
+        port = discoveredPortList[port_id]
+        if port['details']['media_type'] == media_type and not port['details']['link_status']['link_up']:
+            if port['details']['mode'] == 'NETWORK' and not port['details']['forward_error_correction_settings']['enabled']:
+                # Enable such ports
+                if 'enabled' in port['details']:
+                    nto.modifyPort(str(port_id), {'enabled': True})
+                    print("Enabled port %s:%s" % (host_ip, port['details']['default_name']))
+            else:
+                if port['details']['mode'] != 'NETWORK':
+                    # Convert such ports to NETWORK
+                    nto.modifyPort(str(port_id), {'mode': 'NETWORK'})
+                    print("Converted port %s:%s to NETWORK" % (host_ip, port['details']['default_name']))
+                if port['details']['forward_error_correction_settings']['enabled']:
+                    # Disable FEC
+                    nto.modifyPort(str(port_id), {'forward_error_correction_settings': {'enabled': False}})
+                    print("Disabled FEC on %s:%s" % (host_ip, port['details']['default_name']))
+                # Validate new settings took effect
+                portDetails = nto.getPort(str(port_id))
+                if portDetails['mode'] == 'NETWORK' and not portDetails['forward_error_correction_settings']['enabled']:
+                    # Enable the port
+                    if 'enabled' in port['details']:
+                        nto.modifyPort(str(port_id), {'enabled': True})
+                        print("Enabled port %s:%s" % (host_ip, port['details']['default_name']))
+                    
+    # Pause the thread to give the ports a chance to come up
+    time.sleep(10)
+    print('')
+    
+    # Collect link status for ports in scope
+    for port_id in discoveredPortList:
+        port = discoveredPortList[port_id]
+        ntoPortDetails = nto.getPort(str(port_id))
+        print("Collected port %s:%s status:" % (host_ip, ntoPortDetails['default_name'])),
+        if ntoPortDetails['link_status']['link_up']:
+            print('UP')
+            discoveredPortList[port_id] = {'ZTPSucceeded': True}
+        else:
+            print('DOWN')
+            discoveredPortList[port_id] = {'ZTPSucceeded': False}
+        # Update the list with the latest config and status
+        discoveredPortList[port_id]['details'] = ntoPortDetails
+
     # Proceed to 10G
     media_type = 'SFP_PLUS_10G'
     link_settings = '10G_FULL'
